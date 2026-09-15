@@ -23,6 +23,18 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@postgres:5432/helpdesk"
 
+    @field_validator("DATABASE_URL", mode="after")
+    @classmethod
+    def assemble_database_url(cls, v: str) -> str:
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if v_stripped.startswith("postgres://"):
+                return v_stripped.replace("postgres://", "postgresql+asyncpg://", 1)
+            if v_stripped.startswith("postgresql://") and not v_stripped.startswith("postgresql+"):
+                return v_stripped.replace("postgresql://", "postgresql+asyncpg://", 1)
+            return v_stripped
+        return v
+
     # Redis
     REDIS_URL: str = "redis://redis:6379/0"
 
