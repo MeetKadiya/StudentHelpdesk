@@ -1,0 +1,491 @@
+"use client";
+
+import { useState, type ReactNode } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth/auth-context";
+import { StudentSidebar } from "@/components/student-sidebar";
+import { FacultySidebar } from "@/components/faculty-sidebar";
+import { AdminSidebar } from "@/components/admin-sidebar";
+import { CampusChatbot } from "@/components/campus-chatbot";
+import { getDynamicStudentProfile } from "@/data/student-services";
+
+export function PortalShell({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated, user, logout } = useAuth();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const role = user?.role || "student";
+  const isFaculty = role === "faculty";
+  const isAdmin = role === "admin";
+  const isStudent = !isFaculty && !isAdmin;
+
+  // Derive dynamic identity labels
+  const emailPrefix = user?.email ? user.email.split("@")[0].split(/[._-]/).filter(Boolean).map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" ") : "";
+  const profile = getDynamicStudentProfile(user?.email);
+
+  const displayName = isFaculty
+    ? (emailPrefix ? `Prof. ${emailPrefix}` : "Professor / Faculty")
+    : isAdmin
+    ? (emailPrefix ? `Admin ${emailPrefix}` : "System Administrator")
+    : profile.name;
+
+  const roleSubtitle = isFaculty
+    ? "Faculty Staff • Dept of Computing & IT"
+    : isAdmin
+    ? "Central System SuperAdmin • IT Ops"
+    : `${profile.enrollmentNo} • Sem 6`;
+
+  function handleLogout() {
+    logout();
+    setIsUserMenuOpen(false);
+    router.push("/login");
+  }
+
+  // If user is authenticated, render role-specific shell
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#f4f6f9] text-slate-800 flex flex-col antialiased">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Responsive Left Sidebar based on Role */}
+          {isFaculty ? (
+            <FacultySidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+          ) : isAdmin ? (
+            <AdminSidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+          ) : (
+            <StudentSidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+          )}
+
+          {/* Main Layout Area */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+            {/* Top Navigation Bar */}
+            <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 shadow-sm">
+              <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-lg">
+                {/* Hamburger Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setIsSidebarOpen((prev) => !prev)}
+                  className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  aria-label="Toggle navigation menu"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+
+                {/* Search Bar */}
+                <div className="relative flex-1 max-w-xs sm:max-w-sm">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={
+                      isFaculty
+                        ? "Search inquiries, courses, students..."
+                        : isAdmin
+                        ? "Search users, routing rules, system..."
+                        : "Type text to search..."
+                    }
+                    className="w-full rounded-md border border-slate-200 bg-slate-50/70 py-1.5 pl-3 pr-9 text-xs text-slate-800 placeholder-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all"
+                  />
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Right User Profile & Role Quick Links */}
+              <div className="flex items-center gap-2 sm:gap-4">
+                <nav className="hidden md:flex items-center gap-3.5 text-xs font-semibold text-slate-600 mr-2">
+                  {isFaculty ? (
+                    <>
+                      <Link
+                        href="/faculty"
+                        className={`hover:text-purple-700 transition-colors ${
+                          pathname === "/faculty" ? "text-purple-700 font-bold" : ""
+                        }`}
+                      >
+                        Faculty Workspace
+                      </Link>
+                      <Link
+                        href="/faculty#inquiries"
+                        className="hover:text-purple-700 transition-colors"
+                      >
+                        Student Inquiries
+                      </Link>
+                      <Link
+                        href="/faculty#teaching"
+                        className="hover:text-purple-700 transition-colors"
+                      >
+                        Teaching Schedule
+                      </Link>
+                      <Link
+                        href="/services"
+                        className={`hover:text-purple-700 transition-colors ${
+                          pathname === "/services" ? "text-purple-700 font-bold" : ""
+                        }`}
+                      >
+                        Campus Services
+                      </Link>
+                    </>
+                  ) : isAdmin ? (
+                    <>
+                      <Link
+                        href="/admin"
+                        className={`hover:text-rose-700 transition-colors ${
+                          pathname === "/admin" ? "text-rose-700 font-bold" : ""
+                        }`}
+                      >
+                        Admin Hub
+                      </Link>
+                      <Link
+                        href="/admin#users"
+                        className="hover:text-rose-700 transition-colors"
+                      >
+                        User Directory
+                      </Link>
+                      <Link
+                        href="/admin#routing"
+                        className="hover:text-rose-700 transition-colors"
+                      >
+                        Routing Rules
+                      </Link>
+                      <Link
+                        href="/admin/analytics"
+                        className={`hover:text-rose-700 transition-colors ${
+                          pathname === "/admin/analytics" ? "text-rose-700 font-bold" : ""
+                        }`}
+                      >
+                        Analytics
+                      </Link>
+                      <Link
+                        href="/services"
+                        className={`hover:text-rose-700 transition-colors ${
+                          pathname === "/services" ? "text-rose-700 font-bold" : ""
+                        }`}
+                      >
+                        Services
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        href="/"
+                        className={`hover:text-rose-600 transition-colors ${
+                          pathname === "/" ? "text-rose-600 font-bold" : ""
+                        }`}
+                      >
+                        Dashboard
+                      </Link>
+                      <Link
+                        href="/attendance"
+                        className={`hover:text-rose-600 transition-colors ${
+                          pathname.startsWith("/attendance") ? "text-rose-600 font-bold" : ""
+                        }`}
+                      >
+                        Attendance
+                      </Link>
+                      <Link
+                        href="/exam/results"
+                        className={`hover:text-rose-600 transition-colors ${
+                          pathname.startsWith("/exam") ? "text-rose-600 font-bold" : ""
+                        }`}
+                      >
+                        Exams & Results
+                      </Link>
+                      <Link
+                        href="/fees/history"
+                        className={`hover:text-rose-600 transition-colors ${
+                          pathname.startsWith("/fees") ? "text-rose-600 font-bold" : ""
+                        }`}
+                      >
+                        Fees & Receipts
+                      </Link>
+                      <Link
+                        href="/services"
+                        className={`hover:text-rose-600 transition-colors ${
+                          pathname === "/services" ? "text-rose-600 font-bold" : ""
+                        }`}
+                      >
+                        Campus Services
+                      </Link>
+                      <Link
+                        href="/tickets"
+                        className={`hover:text-rose-600 transition-colors ${
+                          pathname === "/tickets" ? "text-rose-600 font-bold" : ""
+                        }`}
+                      >
+                        My Inquiries
+                      </Link>
+                    </>
+                  )}
+                </nav>
+
+                {/* Identity Profile Pill */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                    className="flex items-center gap-2.5 rounded-full p-1 pl-1.5 pr-2.5 hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+                  >
+                    {/* User Avatar with role accent */}
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-white font-bold text-xs shadow-sm overflow-hidden ring-2 ${
+                        isFaculty
+                          ? "bg-purple-800 ring-purple-200"
+                          : isAdmin
+                          ? "bg-slate-900 ring-rose-200"
+                          : "bg-slate-800 ring-slate-200"
+                      }`}
+                    >
+                      <span className="text-[11px] font-semibold tracking-wider">
+                        {user?.email?.slice(0, 2).toUpperCase() || "US"}
+                      </span>
+                    </div>
+
+                    <div className="hidden text-left md:block">
+                      <p className="text-xs font-semibold text-slate-800 leading-tight max-w-[170px] truncate">
+                        {displayName}
+                      </p>
+                      <p className="text-[10px] text-slate-500 font-medium truncate max-w-[170px]">
+                        {roleSubtitle}
+                      </p>
+                    </div>
+
+                    <svg
+                      className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                        isUserMenuOpen ? "rotate-180" : ""
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Profile Dropdown Menu */}
+                  {isUserMenuOpen && (
+                    <>
+                      <div
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="fixed inset-0 z-40"
+                        aria-hidden="true"
+                      />
+                      <div className="absolute right-0 mt-2 z-50 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl animate-scale-in">
+                        <div className="border-b border-slate-100 px-3 py-2">
+                          <p className="text-xs font-bold text-slate-800 truncate">
+                            {displayName}
+                          </p>
+                          <p className="text-[11px] text-slate-500 truncate">{user?.email}</p>
+                          <span
+                            className={`inline-block mt-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                              isFaculty
+                                ? "bg-purple-100 text-purple-800 border border-purple-200"
+                                : isAdmin
+                                ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                            }`}
+                          >
+                            {isFaculty ? "Faculty Member" : isAdmin ? "System Administrator" : "Enrolled Student"}
+                          </span>
+                        </div>
+
+                        <div className="py-1 text-xs text-slate-700">
+                          {isFaculty ? (
+                            <>
+                              <Link
+                                href="/faculty"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>👨‍🏫</span> Faculty Workspace
+                              </Link>
+                              <Link
+                                href="/faculty#inquiries"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>📥</span> Student Inquiries
+                              </Link>
+                              <Link
+                                href="/faculty#teaching"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>📖</span> Teaching Modules
+                              </Link>
+                              <Link
+                                href="/services"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>🏛️</span> Campus Services
+                              </Link>
+                            </>
+                          ) : isAdmin ? (
+                            <>
+                              <Link
+                                href="/admin"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>🛡️</span> Admin Console
+                              </Link>
+                              <Link
+                                href="/admin#users"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>👥</span> User & Role Directory
+                              </Link>
+                              <Link
+                                href="/admin#routing"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>🔀</span> Routing & Escalations
+                              </Link>
+                              <Link
+                                href="/admin/analytics"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>📊</span> System Analytics
+                              </Link>
+                            </>
+                          ) : (
+                            <>
+                              <Link
+                                href="/"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>🎓</span> My Student Profile
+                              </Link>
+                              <Link
+                                href="/attendance"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>📅</span> Overall Attendance
+                              </Link>
+                              <Link
+                                href="/exam/results"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>📊</span> Provisional Result
+                              </Link>
+                              <Link
+                                href="/fees/history"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>🧾</span> Fees Receipt History
+                              </Link>
+                              <Link
+                                href="/services"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>🏛️</span> Campus Services Directory
+                              </Link>
+                              <Link
+                                href="/tickets"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-slate-100"
+                              >
+                                <span>💬</span> My Inquiries & Tickets
+                              </Link>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-1">
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                          >
+                            <svg className="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            Log out
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </header>
+
+            {/* Main Content Area */}
+            <main className="flex-1 p-3 sm:p-5 lg:p-7 max-w-7xl w-full mx-auto animate-fade-in">
+              {children}
+            </main>
+          </div>
+        </div>
+
+        {/* AI Campus Assistant Floating Chatbot */}
+        <CampusChatbot />
+      </div>
+    );
+  }
+
+  // Unauthenticated / Public Shell
+  return (
+    <div className="min-h-screen bg-paper font-sans text-ink flex flex-col antialiased">
+      <header className="sticky top-0 z-20 border-b border-line bg-paper-raised/85 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4">
+          <Link href="/" className="flex items-center gap-2 transition-standard hover:opacity-80">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white font-bold text-sm shadow-sm">
+              🏛️
+            </div>
+            <div>
+              <span className="font-bold text-xs uppercase tracking-tight text-slate-900 block leading-tight">
+                University Portal
+              </span>
+              <span className="font-display text-sm font-medium tracking-tight text-ink block leading-tight">
+                Academic Management & Services
+              </span>
+            </div>
+          </Link>
+
+          <nav className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
+            <Link href="/services" className="text-ink-muted hover:text-ink transition-colors">
+              Campus Services
+            </Link>
+            <Link href="/login" className="text-ink-muted hover:text-ink transition-colors">
+              Log in
+            </Link>
+            <Link href="/signup" className="btn-primary !px-3.5 !py-1.5 text-xs">
+              Sign up
+            </Link>
+          </nav>
+        </div>
+      </header>
+      <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 animate-fade-in">
+        {children}
+      </main>
+
+      {/* AI Campus Assistant Floating Chatbot */}
+      <CampusChatbot />
+    </div>
+  );
+}

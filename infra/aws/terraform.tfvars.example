@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and fill in for your account before running
+# `terraform plan`. Never commit the real terraform.tfvars (see
+# infra/aws/.gitignore).
+
+aws_region   = "us-east-1"
+project_name = "helpdesk-ai"
+environment  = "dev"
+
+# Leave the rest at their variables.tf defaults unless you have a specific
+# reason to change them — they're dev-tier sizing choices, not
+# capacity-planned for real traffic.

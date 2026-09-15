@@ -1,0 +1,4 @@
+# Root docker-compose.yml
+# Includes the complete local development stack defined in docker/docker-compose.yml
+include:
+  - docker/docker-compose.yml

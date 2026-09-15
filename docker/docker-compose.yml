@@ -1,0 +1,272 @@
+# Student HelpDesk AI — local/dev stack. See project-management/architecture.md
+# §3 for the canonical service list — do not rename services without a
+# task_board.md entry (folder_structure.md / agent1.md rule).
+#
+# DEVOPS-02 (2026-08-10): all four Dockerfiles now exist —
+# docker/frontend.Dockerfile, docker/backend.Dockerfile,
+# docker/ai-worker.Dockerfile, docker/faiss-service.Dockerfile. Not yet
+# build/up tested against a real Docker daemon (unavailable in this
+# environment) — only structurally validated (YAML parse + depends_on/
+# volume resolution). See task_board.md / state_claude4.md for details.
+# ai-worker/faiss-service build contexts are the repo root (ARCH-DECISION-02,
+# resolved this session) — see docker/faiss-service.Dockerfile's header
+# comment for why.
+#
+# DEVOPS-06 (2026-08-10): added loki + promtail services for log
+# aggregation, plus a Grafana datasource-provisioning mount so both
+# Prometheus and Loki are pre-configured on first boot. Same structural-
+# only verification caveat as above — no Docker daemon available to
+# actually confirm Promtail can reach /var/lib/docker/containers or that
+# the Loki schema config is valid beyond YAML parsing.
+
+name: studenthelpdesk
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - fastapi-backend
+      - nextjs-frontend
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  nextjs-frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/frontend.Dockerfile
+      args:
+        # Use relative /api/v1 so browser requests stay same-origin through Nginx
+        NEXT_PUBLIC_API_BASE_URL: /api/v1
+    depends_on:
+      - fastapi-backend
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  fastapi-backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
+    env_file:
+      - ../backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  celery-worker:
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
+    # Reuses the backend image (same codebase, app/workers/) with a different
+    # entrypoint command rather than a separate Dockerfile — see
+    # folder_structure.md (backend/app/workers/ owns celery/email entrypoints).
+    command: celery -A app.workers.celery_app worker --loglevel=info
+    env_file:
+      - ../backend/.env
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  email-worker:
+    build:
+      context: ../backend
+      dockerfile: ../docker/backend.Dockerfile
+    command: celery -A app.workers.celery_app worker --loglevel=info --queues=email -n email-worker@%h
+    env_file:
+      - ../backend/.env
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  ai-worker:
+    build:
+      context: ..
+      dockerfile: docker/ai-worker.Dockerfile
+    # ARCH-DECISION-02 (resolved 2026-08-10, Claude-4): build context is the
+    # repo root, not a bare ../agents context — agents/rag/ingest.py's
+    # REPO_ROOT assumes agents/ and knowledgebase/ are siblings, so the
+    # image needs both. See docker/ai-worker.Dockerfile header comment.
+    #
+    # env_file switched from ../backend/.env to ../agents/.env per
+    # agents/config.py's own module docstring, which flagged the previous
+    # wiring as incomplete (backend/.env.example never had REDIS_URL/
+    # AI_TASK_QUEUE/BACKEND_INTERNAL_BASE_URL to begin with).
+    env_file:
+      - ../agents/.env
+    volumes:
+      # Bind-mounted (not just image-baked) so /reindex output from
+      # faiss-service — and any admin-curated docs — are visible here
+      # without a rebuild. AI-04's retriever loads the index in-process.
+      - ../knowledgebase:/app/knowledgebase
+    depends_on:
+      - redis
+      - postgres
+    # No depends_on: faiss-service — AI-04 resolved to load FaissRetriever
+    # in-process (see agents/worker/graph_runner.py docstring), so there's
+    # no network dependency, only a shared knowledgebase/ volume.
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  faiss-service:
+    build:
+      context: ..
+      dockerfile: docker/faiss-service.Dockerfile
+    # See ARCH-DECISION-02 resolution note on ai-worker above — same context
+    # reasoning applies here (this is the service that owns /reindex).
+    env_file:
+      - ../agents/.env
+    volumes:
+      - ../knowledgebase:/app/knowledgebase
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-helpdesk}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9001:9001"  # console — dev-only convenience, not routed through nginx
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"  # dev-only convenience
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Pre-provisions the Prometheus + Loki datasources (DEVOPS-06) so
+      # neither needs manual setup through the Grafana UI on first boot.
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    ports:
+      - "3001:3000"  # dev-only convenience; frontend already uses 3000 internally
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  loki:
+    image: grafana/loki:latest
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki_data:/loki
+    ports:
+      - "3100:3100"  # dev-only convenience — lets Grafana/curl query Loki directly
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  promtail:
+    image: grafana/promtail:latest
+    command: -config.file=/etc/promtail/promtail-config.yml
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      # Promtail needs the Docker socket (to discover running containers)
+      # and the host's container-log directory (to actually read their
+      # stdout/stderr) — both read-only, since Promtail only ships logs,
+      # never writes to Docker or the containers it reads from.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8081:8080"  # dev-only convenience
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - helpdesk-net
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+networks:
+  helpdesk-net:
+    driver: bridge

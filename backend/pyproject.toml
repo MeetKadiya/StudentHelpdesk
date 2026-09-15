@@ -1,0 +1,23 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+addopts = "-ra"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# B008 ("function call in argument default") is flake8-bugbear's rule,
+# and it's a false positive for every FastAPI route in this codebase -
+# Depends(...) in a default argument IS how FastAPI's dependency
+# injection works; ruff's own docs list this exact FastAPI pattern as the
+# standard case to ignore B008 for. Found via an actual `ruff check .`
+# run against the real codebase this session (DEVOPS-04) - 36 of 46
+# reported errors were this single false positive across every
+# dependency-injected route, which would have made a freshly-added CI
+# job red on day one for no real reason.
+ignore = ["B008"]

@@ -1,0 +1,14 @@
+flowchart LR
+    Ticket["New ticket / follow-up message"] --> Router["Router node<br/>intent + category classification"]
+    Router --> Specialist["Specialist node<br/>RAG retrieval + draft answer"]
+    Specialist --> Supervisor["Supervisor node<br/>confidence scoring + decision"]
+    Supervisor -->|"auto_respond"| WriteBack["Write-back to backend"]
+    Supervisor -->|"clarify"| WriteBack
+    Supervisor -->|"escalate"| WriteBack
+    WriteBack -->|"auto_respond / clarify"| StudentSees["Student sees answer"]
+    WriteBack -->|"escalate"| RoutingLookup["Routing rule lookup by category"]
+    RoutingLookup --> FacultyQueue["Assigned to faculty member"]
+    FacultyQueue --> FacultyResponds["Faculty responds"]
+    FacultyResponds -->|"marked verified"| LearningAgent["Learning Agent"]
+    LearningAgent --> Reindex["Re-index into knowledge base"]
+    Reindex -.-> Specialist

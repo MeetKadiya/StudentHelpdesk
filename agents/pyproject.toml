@@ -1,0 +1,25 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# Same B008 exclusion as backend/pyproject.toml - agents/service/main.py
+# (faiss-service) uses FastAPI's Depends(...) default-argument pattern
+# too. See that file's comment for the full reasoning.
+ignore = ["B008"]
+
+[tool.ruff.lint.isort]
+# Without this, ruff's isort treats `agents.*` imports as just another
+# alphabetically-sorted module alongside third-party packages (celery,
+# httpx, etc.) instead of a separate first-party block - found via an
+# actual `ruff check .` run against the real codebase this session
+# (DEVOPS-04). backend/pyproject.toml doesn't need the equivalent
+# `known-first-party = ["app"]` because backend/'s existing import order
+# happened to already satisfy ruff's default grouping; agents/'s didn't.
+known-first-party = ["agents"]

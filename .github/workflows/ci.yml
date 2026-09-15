@@ -1,0 +1,128 @@
+name: CI
+
+# DEVOPS-04. Three independent jobs (backend, agents, frontend) rather
+# than one monolithic job - each service has its own dependency set and
+# none of their tests currently need each other to run (backend/tests/
+# is DB-independent per DEVOPS-03's own scope note; agents/tests/ uses
+# fakes for the LLM/embedder, per AI-01/AI-02/AI-05's documented
+# no-network-to-model-hub limitation). No Postgres/Redis service
+# containers are set up here - nothing in the current test suites needs
+# them yet. Add one only when a real DB-backed or broker-backed test
+# actually exists.
+#
+# Not yet added: a job that runs docker-compose build/up - no Docker
+# daemon was available in the environment this workflow was authored in
+# to verify that job would even pass, and getting it wrong silently (a
+# green check that doesn't mean what it claims) is worse than not having
+# it. Flagged here rather than guessed at.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (lint + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt ruff black
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format check (black)
+        # continue-on-error REMOVED 2026-08-19 (TEST-01, Claude-2
+        # cross-owner pickup in Claude-4's lane): a real process-execution
+        # channel became available this session (Desktop Commander) -
+        # actually ran `black .` for real against backend/ (35 files
+        # reformatted, matching black --check's own earlier count) and
+        # re-ran the full backend + root test suites afterward to confirm
+        # nothing broke (2/2, 9/9 - see task_board.md's TEST-01 entry).
+        # This is now a real gate, not an informational-only step.
+        run: black --check .
+
+      - name: Test (pytest)
+        run: pytest
+
+  agents:
+    name: Agents (lint + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agents
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: agents/requirements.txt
+
+      - name: Install dependencies
+        # sentence-transformers pulls in torch (large download, no
+        # network access to the model hub needed at install/import time -
+        # see agents/embeddings/embedder.py's deferred-import docstring).
+        # agents/tests/ never instantiates SentenceTransformerEmbedder
+        # for real, so a slow install here doesn't mean tests need the
+        # model hub to succeed.
+        run: pip install -r requirements.txt ruff black
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Format check (black)
+        # continue-on-error, NOT removed - same reasoning as the backend
+        # job's black step (never been run against this codebase; no
+        # process-execution tool available this session to run `black .`
+        # for real rather than risk a hand-transcribed mismatch). See that
+        # step's comment for the full explanation.
+        run: black --check .
+        continue-on-error: true
+
+      - name: Test (pytest)
+        run: pytest
+
+  frontend:
+    name: Frontend (lint + typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        # No package-lock.json committed yet (FRONTEND-01..05 never added
+        # one) - `npm install` rather than `npm ci` until one exists.
+        # Switch to `npm ci` (and add cache-dependency-path above) once a
+        # lockfile is committed, for reproducible installs.
+        run: npm install
+
+      - name: Lint (next lint)
+        run: npm run lint
+
+      - name: Typecheck (tsc)
+        run: npm run typecheck
+
+      # No test job: no test framework/scripts exist in frontend/
+      # package.json yet. Not silently assumed here - add the day a
+      # `test` script exists.

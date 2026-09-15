@@ -1,0 +1,21 @@
+# Grafana datasource provisioning — DEVOPS-06. Mounted at
+# /etc/grafana/provisioning/datasources/ in the grafana service so both
+# Prometheus (already running, DEVOPS-01) and Loki (new, DEVOPS-06) are
+# pre-configured on first boot — no manual "Add data source" click-through
+# needed, matching this project's "everything as code" pattern elsewhere
+# (docker-compose.yml itself, the Prometheus scrape config).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    editable: true

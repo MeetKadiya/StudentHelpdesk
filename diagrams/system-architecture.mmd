@@ -1,0 +1,21 @@
+flowchart TB
+    Internet((Internet)) --> Nginx["nginx"]
+    Nginx --> Frontend["Next.js Frontend"]
+    Nginx --> Backend["FastAPI Backend"]
+
+    Backend --> Postgres[("PostgreSQL")]
+    Backend --> Redis[("Redis")]
+
+    Redis --> AIWorker["ai-worker"]
+    AIWorker --> FaissService["faiss-service"]
+    AIWorker -.->|"internal write-back"| Backend
+    FaissService --> KnowledgeBase[("Knowledge Base / FAISS index")]
+
+    Redis --> CeleryWorker["celery-worker"]
+    Redis --> EmailWorker["email-worker"]
+
+    Backend --> MinIO[("MinIO / S3")]
+
+    Prometheus["Prometheus"] --> Grafana["Grafana"]
+    Loki["Loki"] --> Grafana
+    Promtail["Promtail"] --> Loki

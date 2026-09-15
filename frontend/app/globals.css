@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Perforated "ticket stub" edge — the one signature visual element,
+   used once (auth screens), not repeated as decoration everywhere.
+   Pure CSS, no image assets, so it costs nothing at runtime. */
+.ticket-perforation {
+  background-image: radial-gradient(circle, #f3f4f1 3px, transparent 3.5px);
+  background-size: 16px 16px;
+  background-position: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .transition-standard {
+    transition: all 150ms ease;
+  }
+}
+
+@layer base {
+  ::selection {
+    background-color: #24403a;
+    color: #f3f4f1;
+  }
+
+  /* One shared focus style everywhere instead of each element inventing
+     its own ring, so keyboard navigation feels considered rather than
+     accidental. */
+  :focus-visible {
+    outline: 2px solid #24403a;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  /* Shared surface for anything card-like (tickets, rows, panels) so the
+     app screens read as the same product as the marketing/auth pages. */
+  .surface-card {
+    @apply rounded-lg border border-line bg-paper-raised shadow-card;
+  }
+
+  .surface-row {
+    @apply flex items-center justify-between px-4 py-3.5 transition-standard hover:bg-paper;
+  }
+
+  .field-input {
+    @apply w-full rounded-md border border-line bg-paper px-3 py-2 text-sm text-ink placeholder:text-ink-faint transition-standard focus:border-ledger focus:outline-none focus:ring-1 focus:ring-ledger;
+  }
+
+  .field-label {
+    @apply block text-sm font-medium text-ink-muted;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-md bg-ledger px-4 py-2.5 text-sm font-medium text-paper-raised transition-standard hover:bg-ledger-dark disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-md border border-line bg-paper-raised px-4 py-2.5 text-sm font-medium text-ink transition-standard hover:border-ink disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .status-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium capitalize;
+  }
+
+  .error-banner {
+    @apply rounded-md border-l-2 border-rust bg-rust-light px-3 py-2 text-sm text-rust;
+  }
+
+  /* Cheap, GPU-friendly shimmer for loading states — a gradient sweep, no
+     JS, respects prefers-reduced-motion so it never fights accessibility
+     settings while still feeling "alive" instead of a static grey box. */
+  .skeleton {
+    @apply rounded-md bg-line/60;
+    background-image: linear-gradient(
+      90deg,
+      rgba(20, 24, 27, 0.04) 25%,
+      rgba(20, 24, 27, 0.09) 37%,
+      rgba(20, 24, 27, 0.04) 63%
+    );
+    background-size: 400% 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .skeleton {
+      @apply animate-shimmer;
+    }
+  }
+}

@@ -1,0 +1,38 @@
+# Loki config — DEVOPS-06. Single-binary mode (all Loki components in one
+# process), filesystem storage — appropriate for this project's scale
+# (a dev/course-assignment stack, not a production multi-tenant deployment).
+# Matches the same "keep it simple until there's a reason not to" approach
+# already used for Prometheus/Grafana in this docker-compose.yml.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2024-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+# No retention/compaction policy configured — this stack has no scheduled
+# cleanup job. Fine for dev; revisit before any real production deployment
+# (see docs/deployment.md, DOCS-01, once that exists) with an actual
+# retention window instead of unbounded local disk growth.
+limits_config:
+  allow_structured_metadata: false

@@ -1,0 +1,17 @@
+# Prometheus scrape config. NOTE: fastapi-backend does not expose /metrics
+# yet (no task has added a Prometheus client/middleware) — this scrape target
+# will show as DOWN until that's implemented. Left in place so the wiring is
+# ready; see task_board.md for a future "expose /metrics" task before
+# treating this as functional monitoring.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: fastapi-backend
+    static_configs:
+      - targets: ["fastapi-backend:8000"]
+    metrics_path: /metrics
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
