@@ -5,7 +5,7 @@ Never hardcode secrets here — see .env.example for the expected variables.
 
 import json
 from functools import lru_cache
-from typing import Any
+from typing import Any, Union
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     MINIO_BUCKET: str = "helpdesk-attachments"
 
     # CORS
-    CORS_ORIGINS: list[str] = [
+    CORS_ORIGINS: Union[list[str], str] = [
         "*",
         "http://localhost",
         "http://localhost:80",
@@ -59,11 +59,13 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8080",
     ]
 
-    @field_validator("CORS_ORIGINS", mode="before")
+    @field_validator("CORS_ORIGINS", mode="after")
     @classmethod
     def assemble_cors_origins(cls, v: Any) -> list[str]:
         if isinstance(v, str):
             v_stripped = v.strip()
+            if not v_stripped or v_stripped == "*":
+                return ["*"]
             if v_stripped.startswith("[") and v_stripped.endswith("]"):
                 try:
                     return json.loads(v_stripped)
