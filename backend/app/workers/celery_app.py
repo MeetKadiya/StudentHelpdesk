@@ -23,6 +23,8 @@ celery_app = Celery(
 celery_app.conf.update(
     task_default_queue="default",
     task_track_started=True,
+    broker_connection_retry_on_startup=False,
+    broker_connection_max_retries=0,
     task_routes={
         "app.workers.send_email_notification": {"queue": "email"},
     },

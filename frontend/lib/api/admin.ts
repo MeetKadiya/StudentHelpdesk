@@ -111,3 +111,84 @@ export function rejectKbEntry(accessToken: string, messageId: string): Promise<K
   });
 }
 
+// ---------------------------------------------------------------------------
+// Admin Tickets & Clerk Assistant Triage
+// ---------------------------------------------------------------------------
+
+export interface AdminTicketOut {
+  id: string;
+  student_id: string;
+  student_email: string | null;
+  subject: string | null;
+  category: string | null;
+  status: string;
+  assigned_faculty_id: string | null;
+  assigned_name: string | null;
+  target_role: "admin" | "faculty" | null;
+  department: string | null;
+  priority: string;
+  snippet: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminTicketDetailOut extends AdminTicketOut {
+  messages: Array<{
+    id: string;
+    ticket_id: string;
+    sender_type: "student" | "staff" | "ai_agent";
+    sender_id: string | null;
+    content: string;
+    created_at: string;
+    is_verified?: boolean;
+  }>;
+}
+
+export function listAdminTickets(
+  accessToken: string,
+  params?: { target_role?: string; category?: string; status?: string }
+): Promise<AdminTicketOut[]> {
+  const query = new URLSearchParams();
+  if (params?.target_role) query.set("target_role", params.target_role);
+  if (params?.category) query.set("category", params.category);
+  if (params?.status) query.set("status", params.status);
+  const qs = query.toString();
+  return apiFetch<AdminTicketOut[]>(`/admin/tickets${qs ? `?${qs}` : ""}`, {
+    accessToken,
+  });
+}
+
+export function getAdminTicket(
+  accessToken: string,
+  ticketId: string
+): Promise<AdminTicketDetailOut> {
+  return apiFetch<AdminTicketDetailOut>(`/admin/tickets/${ticketId}`, {
+    accessToken,
+  });
+}
+
+export function respondAdminTicket(
+  accessToken: string,
+  ticketId: string,
+  content: string
+): Promise<any> {
+  return apiFetch<any>(`/admin/tickets/${ticketId}/respond`, {
+    method: "POST",
+    body: { content },
+    accessToken,
+  });
+}
+
+export function reassignAdminTicket(
+  accessToken: string,
+  ticketId: string,
+  payload: { assigned_to_id?: string | null; category?: string; status?: string }
+): Promise<AdminTicketOut> {
+  return apiFetch<AdminTicketOut>(`/admin/tickets/${ticketId}/reassign`, {
+    method: "PATCH",
+    body: payload,
+    accessToken,
+  });
+}
+
+

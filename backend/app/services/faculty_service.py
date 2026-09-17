@@ -77,7 +77,7 @@ async def respond_to_ticket(
                 f"You can view the full thread and reply anytime at:\n"
                 f"http://localhost:8080/tickets/{ticket.id}\n"
             )
-            send_email_notification.apply_async(args=[student.email, subj, body], queue="email")
+            send_email_notification.apply_async(args=[student.email, subj, body], queue="email", retry=False)
             logger.info("Enqueued student email notification to %s for ticket %s", student.email, ticket.id)
     except Exception as exc:
         logger.warning("Failed to dispatch student email notification: %s", exc)
@@ -91,7 +91,7 @@ async def mark_message_verified(
     """Marks a staff message on a routed ticket as verified (FR-18).
     Per user requirement Step 7, knowledge base ingestion is deferred until
     explicit Admin Approval in the Admin Console."""
-    await _get_routed_ticket(db, ticket_id, faculty_id)
+    ticket = await _get_routed_ticket(db, ticket_id, faculty_id)
 
     message = await db.get(Message, message_id)
     if message is None or message.ticket_id != ticket_id or message.sender_type != "staff":
@@ -101,7 +101,22 @@ async def mark_message_verified(
     message.is_kb_approved = False
     await db.commit()
     await db.refresh(message)
-    logger.info("Message %s marked as verified by faculty %s (pending Admin approval)", message_id, faculty_id)
+    logger.info("Message %s marked as verified by faculty %s", message_id, faculty_id)
+
+    first_msg = await db.scalar(
+        select(Message)
+        .where(Message.ticket_id == ticket_id, Message.sender_type == "student")
+        .order_by(Message.created_at)
+    )
+    question = first_msg.content if first_msg else message.content
+    from app.services.ai_dispatch_service import enqueue_learning_job
+    enqueue_learning_job(
+        ticket_id=ticket_id,
+        message_id=message_id,
+        question=question,
+        answer=message.content,
+        category=ticket.category,
+    )
 
     return message
 

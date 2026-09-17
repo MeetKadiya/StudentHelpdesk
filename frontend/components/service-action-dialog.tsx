@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import { createTicket } from "@/lib/api/tickets";
+import { ApiError } from "@/lib/api/client";
 import {
   type CampusService,
   getDynamicFeeInvoice,
@@ -24,6 +26,7 @@ export function ServiceActionDialog({
   onClose,
   onSuccess,
 }: ServiceActionDialogProps) {
+  const router = useRouter();
   const { user, accessToken } = useAuth();
   const profile = getDynamicStudentProfile(user?.email);
   const feeInvoice = getDynamicFeeInvoice(user?.email);
@@ -32,6 +35,8 @@ export function ServiceActionDialog({
   // States
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [createdTicketId, setCreatedTicketId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Bonafide certificate state
   const [certificatePurpose, setCertificatePurpose] = useState("Visa / Passport Application");
@@ -48,6 +53,8 @@ export function ServiceActionDialog({
   function handleClose() {
     setSubmitting(false);
     setSuccessMessage(null);
+    setCreatedTicketId(null);
+    setErrorMessage(null);
     setCertificateGenerated(false);
     setField1("");
     setField2("");
@@ -100,20 +107,24 @@ export function ServiceActionDialog({
     if (!accessToken) return;
 
     setSubmitting(true);
+    setErrorMessage(null);
     try {
       const subjectText = `${service?.title}: ${field1 || "Service Request"}`;
-      const messageText = `Service: ${service?.title}\nDetails: ${field1} | ${field2}\nNotes / Requirement: ${notes || "Submitted via Student Portal Service Action Hub."}\nStudent ID: ${profile.enrollmentNo}\nEmail: ${profile.email}`;
+      const messageText = `Service: ${service?.title}\nDetails: ${field1 || "Standard Request"} | ${field2 || "Normal Urgency"}\nNotes / Requirement: ${notes || "Submitted via Student Portal Service Action Hub."}\nStudent ID: ${profile.enrollmentNo}\nEmail: ${profile.email}`;
 
-      await createTicket(accessToken, {
+      const newTicket = await createTicket(accessToken, {
         subject: subjectText,
         message: messageText,
         category: service?.title,
       });
 
-      setSuccessMessage("Your service request has been processed and registered successfully!");
+      setCreatedTicketId(newTicket.id);
+      setSuccessMessage("Your service request has been triaged by Clerk Assistant and submitted successfully!");
       if (onSuccess) onSuccess();
-    } catch {
-      setSuccessMessage("Failed to register request. Please verify connection and try again.");
+    } catch (err) {
+      setErrorMessage(
+        err instanceof ApiError ? String(err.detail) : "Failed to register request. Please verify connection and try again."
+      );
     } finally {
       setSubmitting(false);
     }
@@ -357,22 +368,61 @@ export function ServiceActionDialog({
             service.actionType !== "bonafide_certificate" && (
               <form onSubmit={handleGeneralActionSubmit} className="space-y-4">
                 {successMessage ? (
-                  <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-2">
-                    <p className="font-bold text-sm">Action Registered Successfully!</p>
-                    <p>{successMessage}</p>
-                    <p className="text-[11px] text-emerald-600">
-                      Our department officers will review your submission and contact you via {profile.email}.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="mt-2 rounded-lg bg-emerald-700 text-white px-4 py-1.5 font-bold"
-                    >
-                      Close
-                    </button>
+                  <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs space-y-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-base">
+                        ✓
+                      </span>
+                      <div>
+                        <p className="font-bold text-sm text-emerald-950">Inquiry Registered &amp; Triaged Successfully!</p>
+                        <p className="text-[11px] text-emerald-700">{successMessage}</p>
+                      </div>
+                    </div>
+
+                    {createdTicketId && (
+                      <div className="bg-white/80 rounded-xl p-3.5 border border-emerald-200 space-y-1.5 shadow-2xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] uppercase font-bold text-emerald-700">Official Ticket Reference</span>
+                          <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                            🤖 Triaged by Clerk Assistant
+                          </span>
+                        </div>
+                        <p className="font-mono font-bold text-slate-900 text-xs">#{createdTicketId}</p>
+                        <p className="text-[11px] text-slate-600">
+                          Routed to <strong>{service.department}</strong>. Department staff and the AI Specialist are reviewing your submission.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      {createdTicketId && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleClose();
+                            router.push(`/tickets/${createdTicketId}`);
+                          }}
+                          className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 font-bold text-xs shadow-xs cursor-pointer"
+                        >
+                          View Ticket Details →
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleClose}
+                        className="rounded-xl border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 px-4 py-2 font-bold text-xs cursor-pointer"
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <>
+                    {errorMessage && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
+                        <span>⚠️</span> {errorMessage}
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-xs font-bold text-slate-700 block mb-1">

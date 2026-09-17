@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRequireAuth } from "@/lib/auth/use-require-auth";
-import { useRequireStudent } from "@/lib/auth/use-require-student";
 import { ApiError } from "@/lib/api/client";
 import { getTicket, getTicketStatus, postTicketMessage, type TicketDetailOut } from "@/lib/api/tickets";
 
@@ -33,11 +32,10 @@ function formatTimestamp(iso: string): string {
 }
 
 export default function TicketDetailPage() {
-  useRequireStudent();
   const params = useParams<{ id: string }>();
   const ticketId = params.id;
   const accessToken = useRequireAuth();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [ticket, setTicket] = useState<TicketDetailOut | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -110,12 +108,15 @@ export default function TicketDetailPage() {
     return null;
   }
 
+  const backHref = user?.role === "admin" ? "/admin" : user?.role === "faculty" ? "/faculty" : "/tickets";
+  const backLabel = user?.role === "admin" ? "← Back to Admin Console" : user?.role === "faculty" ? "← Back to Faculty Desk" : "← Back to requests";
+
   if (loadError) {
     return (
       <div className="space-y-4">
         <p className="error-banner">{loadError}</p>
-        <Link href="/tickets" className="text-sm text-ledger transition-standard hover:text-ledger-dark">
-          &larr; Back to tickets
+        <Link href={backHref} className="text-sm font-semibold text-ledger transition-standard hover:text-ledger-dark">
+          {backLabel}
         </Link>
       </div>
     );
@@ -140,8 +141,8 @@ export default function TicketDetailPage() {
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/tickets" className="text-sm text-ledger transition-standard hover:text-ledger-dark">
-          &larr; Back to tickets
+        <Link href={backHref} className="text-sm font-semibold text-ledger transition-standard hover:text-ledger-dark">
+          {backLabel}
         </Link>
         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="space-y-1">
@@ -166,17 +167,38 @@ export default function TicketDetailPage() {
       <ul className="space-y-3">
         {ticket.messages.map((msg) => {
           const isStudent = msg.sender_type === "student";
+          const isAi = msg.sender_type === "ai_agent";
+          const isClerk = isAi && msg.content.includes("Clerk Assistant");
           return (
             <li
               key={msg.id}
-              className={`max-w-[80%] animate-fade-in rounded-lg px-4 py-3 shadow-card ${
+              className={`max-w-[85%] animate-fade-in rounded-2xl px-5 py-4 shadow-sm border ${
                 isStudent
-                  ? "ml-auto bg-ledger text-paper-raised"
-                  : "border border-line bg-paper-raised text-ink"
+                  ? "ml-auto bg-slate-900 text-white border-slate-800"
+                  : isClerk
+                  ? "mr-auto bg-indigo-50/80 border-indigo-200 text-slate-900"
+                  : isAi
+                  ? "mr-auto bg-amber-50/70 border-amber-200 text-slate-900"
+                  : "mr-auto bg-white border-slate-200 text-slate-900"
               }`}
             >
-              <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
-              <p className={`mt-1.5 text-xs ${isStudent ? "text-paper-raised/60" : "text-ink-faint"}`}>
+              {isClerk && (
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 uppercase tracking-wider mb-2">
+                  <span>🤖</span> Clerk Assistant Intake &amp; Triage
+                </div>
+              )}
+              {isAi && !isClerk && (
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-700 uppercase tracking-wider mb-2">
+                  <span>⚡</span> AI Automated Resolution
+                </div>
+              )}
+              {!isStudent && !isAi && (
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 uppercase tracking-wider mb-2">
+                  <span>👨‍🏫</span> Official Department Response
+                </div>
+              )}
+              <p className="whitespace-pre-wrap text-sm leading-relaxed">{msg.content}</p>
+              <p className={`mt-2 text-[11px] ${isStudent ? "text-slate-400" : "text-slate-500"}`}>
                 {msg.sender_type} &middot; {formatTimestamp(msg.created_at)}
               </p>
             </li>
@@ -186,7 +208,7 @@ export default function TicketDetailPage() {
 
       <form onSubmit={handleReply} className="surface-card space-y-3 p-5">
         <label htmlFor="reply" className="field-label">
-          Add a follow-up message
+          {user?.role === "student" ? "Add a follow-up message" : "Reply to student inquiry"}
         </label>
         <textarea
           id="reply"
@@ -195,6 +217,11 @@ export default function TicketDetailPage() {
           minLength={1}
           value={reply}
           onChange={(e) => setReply(e.target.value)}
+          placeholder={
+            user?.role === "student"
+              ? "Provide any further details or questions..."
+              : "Write official response to the student..."
+          }
           className="field-input"
         />
         {sendError && <p className="error-banner">{sendError}</p>}
@@ -203,7 +230,7 @@ export default function TicketDetailPage() {
           disabled={isSending || reply.trim().length === 0}
           className="btn-primary"
         >
-          {isSending ? "Sending…" : "Send"}
+          {isSending ? "Sending…" : user?.role === "student" ? "Send Reply" : "Dispatch Staff Response"}
         </button>
       </form>
     </div>

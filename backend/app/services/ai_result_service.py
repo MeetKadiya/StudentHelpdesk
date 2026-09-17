@@ -79,12 +79,6 @@ async def apply_ai_result(db: AsyncSession, ticket_id: uuid.UUID, payload: AiRes
             )
         if rule is not None:
             ticket.assigned_faculty_id = rule.faculty_id
-        else:
-            any_faculty = await db.scalar(
-                select(User).where(User.role == "faculty").order_by(User.created_at)
-            )
-            if any_faculty:
-                ticket.assigned_faculty_id = any_faculty.id
 
         ticket.status = "escalated"
 
@@ -110,7 +104,7 @@ async def apply_ai_result(db: AsyncSession, ticket_id: uuid.UUID, payload: AiRes
                         f"Please log in to your HelpDesk Faculty Portal to review and respond:\n"
                         f"http://localhost:8080/faculty/{ticket.id}\n"
                     )
-                    send_email_notification.apply_async(args=[faculty.email, subj, body], queue="email")
+                    send_email_notification.apply_async(args=[faculty.email, subj, body], queue="email", retry=False)
                     logger.info("Enqueued faculty notification email to %s for ticket %s", faculty.email, ticket.id)
             except Exception as exc:
                 logger.warning("Failed to dispatch faculty notification email: %s", exc)

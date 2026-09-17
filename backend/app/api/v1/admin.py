@@ -10,6 +10,10 @@ from app.api.deps import require_admin
 from app.db.models.user import User
 from app.db.session import get_db
 from app.schemas.admin import (
+    AdminTicketDetailOut,
+    AdminTicketOut,
+    AdminTicketReassign,
+    AdminTicketRespond,
     AnalyticsSummaryOut,
     KbApprovalResultOut,
     PendingKbItemOut,
@@ -18,6 +22,7 @@ from app.schemas.admin import (
     UserRoleUpdate,
 )
 from app.schemas.auth import UserOut
+from app.schemas.ticket import MessageOut
 from app.services import admin_service
 from app.services.admin_service import AdminServiceError
 
@@ -129,4 +134,78 @@ async def reject_kb_entry(
         return KbApprovalResultOut.model_validate(result)
     except AdminServiceError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Clerk Assistant Inquiries & Triage Queue (Admin Desk)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/tickets", response_model=list[AdminTicketOut])
+async def list_admin_tickets(
+    target_role: str | None = None,
+    category: str | None = None,
+    status: str | None = None,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> list[AdminTicketOut]:
+    """Lists all student inquiries across the institution, sorted by Clerk Assistant triage destination."""
+    items = await admin_service.list_all_tickets(
+        db, target_role=target_role, category=category, status_filter=status
+    )
+    return [AdminTicketOut.model_validate(item) for item in items]
+
+
+@router.get("/tickets/{ticket_id}", response_model=AdminTicketDetailOut)
+async def get_admin_ticket(
+    ticket_id: uuid.UUID,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminTicketDetailOut:
+    """Gets complete ticket details, full conversation thread, and Clerk triage metadata."""
+    try:
+        detail = await admin_service.get_admin_ticket_detail(db, ticket_id)
+        return AdminTicketDetailOut.model_validate(detail)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post("/tickets/{ticket_id}/respond", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+async def respond_to_ticket_as_admin(
+    ticket_id: uuid.UUID,
+    payload: AdminTicketRespond,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> MessageOut:
+    """Administrator replies directly to a student ticket."""
+    try:
+        message = await admin_service.respond_as_admin(
+            db, ticket_id, admin.id, payload.content
+        )
+        return MessageOut.model_validate(message)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.patch("/tickets/{ticket_id}/reassign", response_model=AdminTicketOut)
+async def reassign_ticket_queue(
+    ticket_id: uuid.UUID,
+    payload: AdminTicketReassign,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> AdminTicketOut:
+    """Reassigns a ticket between Faculty and Administration queues, or changes its department."""
+    try:
+        ticket = await admin_service.reassign_ticket(
+            db,
+            ticket_id,
+            admin.id,
+            assigned_to_id=payload.assigned_to_id,
+            new_category=payload.category,
+            new_status=payload.status,
+        )
+        detail = await admin_service.get_admin_ticket_detail(db, ticket.id)
+        return AdminTicketOut.model_validate(detail)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 

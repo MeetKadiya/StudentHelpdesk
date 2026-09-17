@@ -233,3 +233,178 @@ async def reject_kb_entry(db: AsyncSession, admin_id: uuid.UUID, message_id: uui
     await db.commit()
     return {"status": "rejected", "message_id": msg.id}
 
+
+async def list_all_tickets(
+    db: AsyncSession,
+    target_role: str | None = None,
+    category: str | None = None,
+    status_filter: str | None = None,
+) -> list[dict]:
+    """Retrieves all tickets across the institution, enriched with Clerk Assistant triage data."""
+    from app.services.clerk_service import triage_student_query
+
+    query = select(Ticket).order_by(Ticket.created_at.desc())
+    if category:
+        query = query.where(Ticket.category == category)
+    if status_filter:
+        query = query.where(Ticket.status == status_filter)
+
+    tickets = list(await db.scalars(query))
+    enriched: list[dict] = []
+
+    for ticket in tickets:
+        student = await db.get(User, ticket.student_id)
+        assigned_user = await db.get(User, ticket.assigned_faculty_id) if ticket.assigned_faculty_id else None
+
+        # First student inquiry snippet
+        first_msg = await db.scalar(
+            select(Message)
+            .where(Message.ticket_id == ticket.id, Message.sender_type == "student")
+            .order_by(Message.created_at)
+        )
+        snippet_text = first_msg.content if first_msg else ""
+
+        # Clerk Assistant triage classification
+        triage = triage_student_query(ticket.subject, snippet_text, ticket.category)
+
+        # Filter by target_role if specified
+        if target_role and triage.target_role != target_role:
+            continue
+
+        assigned_name = None
+        if assigned_user:
+            assigned_name = assigned_user.email
+
+        enriched.append({
+            "id": ticket.id,
+            "student_id": ticket.student_id,
+            "student_email": student.email if student else None,
+            "subject": ticket.subject,
+            "category": ticket.category,
+            "status": ticket.status,
+            "assigned_faculty_id": ticket.assigned_faculty_id,
+            "assigned_name": assigned_name,
+            "target_role": triage.target_role,
+            "department": triage.department,
+            "priority": triage.priority,
+            "snippet": snippet_text[:160] if snippet_text else None,
+            "created_at": ticket.created_at,
+            "updated_at": ticket.updated_at,
+        })
+
+    return enriched
+
+
+async def get_admin_ticket_detail(db: AsyncSession, ticket_id: uuid.UUID) -> dict:
+    """Retrieves full ticket detail, thread messages, and Clerk triage metadata."""
+    from app.services.clerk_service import triage_student_query
+
+    ticket = await db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise AdminServiceError("Ticket not found.")
+
+    student = await db.get(User, ticket.student_id)
+    assigned_user = await db.get(User, ticket.assigned_faculty_id) if ticket.assigned_faculty_id else None
+
+    messages = list(
+        await db.scalars(
+            select(Message).where(Message.ticket_id == ticket_id).order_by(Message.created_at)
+        )
+    )
+
+    first_student_msg = next((m.content for m in messages if m.sender_type == "student"), "")
+    triage = triage_student_query(ticket.subject, first_student_msg, ticket.category)
+
+    assigned_name = assigned_user.email if assigned_user else None
+
+    return {
+        "id": ticket.id,
+        "student_id": ticket.student_id,
+        "student_email": student.email if student else None,
+        "subject": ticket.subject,
+        "category": ticket.category,
+        "status": ticket.status,
+        "assigned_faculty_id": ticket.assigned_faculty_id,
+        "assigned_name": assigned_name,
+        "target_role": triage.target_role,
+        "department": triage.department,
+        "priority": triage.priority,
+        "snippet": first_student_msg[:160] if first_student_msg else None,
+        "created_at": ticket.created_at,
+        "updated_at": ticket.updated_at,
+        "messages": messages,
+    }
+
+
+async def respond_as_admin(
+    db: AsyncSession, ticket_id: uuid.UUID, admin_id: uuid.UUID, content: str
+) -> Message:
+    """Administrator posts a resolution or reply to a student ticket."""
+    from app.workers.celery_app import send_email_notification
+
+    ticket = await db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise AdminServiceError("Ticket not found.")
+
+    message = Message(
+        ticket_id=ticket.id,
+        sender_type="staff",
+        sender_id=admin_id,
+        content=content,
+    )
+    db.add(message)
+    ticket.status = "answered"
+    await _audit(db, admin_id, "admin_replied_ticket", f"ticket_id={ticket_id}")
+    await db.commit()
+    await db.refresh(message)
+
+    # Optional email notification to student
+    try:
+        student = await db.get(User, ticket.student_id)
+        if student and student.email:
+            subj = f"[HelpDesk] Official Response to Ticket #{str(ticket.id)[:8]}"
+            body = (
+                f"Hello,\n\n"
+                f"The University Administration has replied to your request:\n\n"
+                f"• Ticket ID: {ticket.id}\n"
+                f"• Subject: {ticket.subject or 'Inquiry'}\n\n"
+                f"Administrator Response:\n{content}\n\n"
+                f"Review your ticket anytime at:\nhttp://localhost:8080/tickets/{ticket.id}\n"
+            )
+            send_email_notification.apply_async(args=[student.email, subj, body], queue="email", retry=False)
+    except Exception as exc:
+        logger.warning("Failed to dispatch email for admin ticket reply: %s", exc)
+
+    return message
+
+
+async def reassign_ticket(
+    db: AsyncSession,
+    ticket_id: uuid.UUID,
+    admin_id: uuid.UUID,
+    assigned_to_id: uuid.UUID | None,
+    new_category: str | None = None,
+    new_status: str | None = None,
+) -> Ticket:
+    """Administrator reassigns a ticket to another authority or updates category/status."""
+    ticket = await db.get(Ticket, ticket_id)
+    if ticket is None:
+        raise AdminServiceError("Ticket not found.")
+
+    if assigned_to_id is not None:
+        ticket.assigned_faculty_id = assigned_to_id
+    if new_category is not None:
+        ticket.category = new_category
+    if new_status is not None:
+        ticket.status = new_status
+
+    await _audit(
+        db,
+        admin_id,
+        "ticket_reassigned",
+        f"ticket_id={ticket_id} to={assigned_to_id} cat={new_category} st={new_status}",
+    )
+    await db.commit()
+    await db.refresh(ticket)
+    return ticket
+

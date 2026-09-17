@@ -12,8 +12,14 @@ import {
   listPendingKbApprovals,
   approveKbEntry,
   rejectKbEntry,
+  listAdminTickets,
+  getAdminTicket,
+  respondAdminTicket,
+  reassignAdminTicket,
   type RoutingRuleOut,
   type PendingKbItemOut,
+  type AdminTicketOut,
+  type AdminTicketDetailOut,
 } from "@/lib/api/admin";
 import type { UserOut } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
@@ -52,6 +58,548 @@ const CATEGORIES = [
 ] as const;
 
 const ROLES = ["student", "faculty", "admin"] as const;
+
+function ClerkAssistantTriageSection({ accessToken }: { accessToken: string }) {
+  const [tickets, setTickets] = useState<AdminTicketOut[] | null>(null);
+  const [users, setUsers] = useState<UserOut[]>([]);
+  const [roleTab, setRoleTab] = useState<"all" | "admin" | "faculty" | "urgent">("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  // Modal State
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [activeTicket, setActiveTicket] = useState<AdminTicketDetailOut | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [isReplying, setIsReplying] = useState(false);
+  const [replySuccess, setReplySuccess] = useState<string | null>(null);
+
+  // Reassignment state
+  const [reassignUserId, setReassignUserId] = useState<string>("");
+  const [isReassigning, setIsReassigning] = useState(false);
+
+  function reload() {
+    listAdminTickets(accessToken)
+      .then(setTickets)
+      .catch((err) =>
+        setError(err instanceof ApiError ? String(err.detail) : "Failed to load triage inquiries.")
+      );
+
+    listUsers(accessToken)
+      .then(setUsers)
+      .catch(() => {});
+  }
+
+  useEffect(reload, [accessToken]);
+
+  async function openTicketModal(ticketId: string) {
+    setSelectedTicketId(ticketId);
+    setLoadingDetail(true);
+    setReplyText("");
+    setReplySuccess(null);
+    try {
+      const detail = await getAdminTicket(accessToken, ticketId);
+      setActiveTicket(detail);
+      setReassignUserId(detail.assigned_faculty_id || "");
+    } catch (err) {
+      setError(err instanceof ApiError ? String(err.detail) : "Failed to load ticket details.");
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
+  function closeTicketModal() {
+    setSelectedTicketId(null);
+    setActiveTicket(null);
+    setReplyText("");
+    setReplySuccess(null);
+  }
+
+  async function handleSendReply(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedTicketId || !replyText.trim()) return;
+    setIsReplying(true);
+    try {
+      await respondAdminTicket(accessToken, selectedTicketId, replyText.trim());
+      setReplySuccess("Official administrative response dispatched to student successfully!");
+      setReplyText("");
+      const updated = await getAdminTicket(accessToken, selectedTicketId);
+      setActiveTicket(updated);
+      reload();
+      setTimeout(() => setReplySuccess(null), 4000);
+    } catch (err) {
+      setError(err instanceof ApiError ? String(err.detail) : "Failed to send reply.");
+    } finally {
+      setIsReplying(false);
+    }
+  }
+
+  async function handleReassign() {
+    if (!selectedTicketId) return;
+    setIsReassigning(true);
+    try {
+      await reassignAdminTicket(accessToken, selectedTicketId, {
+        assigned_to_id: reassignUserId || null,
+      });
+      const updated = await getAdminTicket(accessToken, selectedTicketId);
+      setActiveTicket(updated);
+      reload();
+      setReplySuccess("Ticket assignment updated successfully!");
+      setTimeout(() => setReplySuccess(null), 4000);
+    } catch (err) {
+      setError(err instanceof ApiError ? String(err.detail) : "Failed to reassign ticket.");
+    } finally {
+      setIsReassigning(false);
+    }
+  }
+
+  const allTickets = tickets || [];
+  const adminCount = allTickets.filter((t) => t.target_role === "admin").length;
+  const facultyCount = allTickets.filter((t) => t.target_role === "faculty").length;
+  const urgentCount = allTickets.filter((t) => t.priority === "urgent" || t.priority === "high").length;
+  const openCount = allTickets.filter((t) => t.status === "open").length;
+
+  const filteredTickets = allTickets.filter((t) => {
+    if (roleTab === "admin" && t.target_role !== "admin") return false;
+    if (roleTab === "faculty" && t.target_role !== "faculty") return false;
+    if (roleTab === "urgent" && t.priority !== "urgent" && t.priority !== "high") return false;
+
+    if (statusFilter !== "all" && t.status !== statusFilter) return false;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchEmail = t.student_email?.toLowerCase().includes(q);
+      const matchSubject = t.subject?.toLowerCase().includes(q);
+      const matchDept = t.department?.toLowerCase().includes(q);
+      const matchCategory = t.category?.toLowerCase().includes(q);
+      const matchSnippet = t.snippet?.toLowerCase().includes(q);
+      if (!matchEmail && !matchSubject && !matchDept && !matchCategory && !matchSnippet) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  return (
+    <div id="clerk-triage" className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <span>🤖</span> Clerk Assistant — Inquiry Triage &amp; Sorting Desk
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Automated intelligence sorts student inquiries into <strong>University Administration</strong> or <strong>Academic Faculty</strong> desks with priority scoring.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-lg bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700 border border-indigo-200">
+            {allTickets.length} Inquiries Triaged
+          </span>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div
+          onClick={() => setRoleTab("all")}
+          className={`rounded-2xl border p-3.5 cursor-pointer transition-all ${
+            roleTab === "all" ? "border-slate-800 bg-slate-900 text-white shadow-sm" : "border-slate-200 bg-slate-50/70 hover:bg-slate-100/70"
+          }`}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-wider block opacity-70">Total Inquiries</span>
+          <span className="text-xl sm:text-2xl font-black mt-1 block">{allTickets.length}</span>
+          <span className="text-[10px] mt-0.5 block opacity-80">{openCount} Needs Attention</span>
+        </div>
+
+        <div
+          onClick={() => setRoleTab("admin")}
+          className={`rounded-2xl border p-3.5 cursor-pointer transition-all ${
+            roleTab === "admin" ? "border-indigo-600 bg-indigo-600 text-white shadow-sm" : "border-indigo-200 bg-indigo-50/60 hover:bg-indigo-100/60"
+          }`}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-wider block opacity-80">🏛️ Admin Queue</span>
+          <span className="text-xl sm:text-2xl font-black mt-1 block">{adminCount}</span>
+          <span className="text-[10px] mt-0.5 block opacity-80">Bursar, Registrar, IT, Hostel</span>
+        </div>
+
+        <div
+          onClick={() => setRoleTab("faculty")}
+          className={`rounded-2xl border p-3.5 cursor-pointer transition-all ${
+            roleTab === "faculty" ? "border-purple-600 bg-purple-600 text-white shadow-sm" : "border-purple-200 bg-purple-50/60 hover:bg-purple-100/60"
+          }`}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-wider block opacity-80">🎓 Faculty Queue</span>
+          <span className="text-xl sm:text-2xl font-black mt-1 block">{facultyCount}</span>
+          <span className="text-[10px] mt-0.5 block opacity-80">Academic, Advising, Exams</span>
+        </div>
+
+        <div
+          onClick={() => setRoleTab("urgent")}
+          className={`rounded-2xl border p-3.5 cursor-pointer transition-all ${
+            roleTab === "urgent" ? "border-rose-600 bg-rose-600 text-white shadow-sm" : "border-rose-200 bg-rose-50/60 hover:bg-rose-100/60"
+          }`}
+        >
+          <span className="text-[10px] font-bold uppercase tracking-wider block opacity-80">⚡ High Priority</span>
+          <span className="text-xl sm:text-2xl font-black mt-1 block">{urgentCount}</span>
+          <span className="text-[10px] mt-0.5 block opacity-80">Urgent &amp; Deadline-Critical</span>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+          {[
+            { id: "all", label: `All Desks (${allTickets.length})` },
+            { id: "admin", label: `🏛️ Administration (${adminCount})` },
+            { id: "faculty", label: `🎓 Faculty (${facultyCount})` },
+            { id: "urgent", label: `⚡ Urgent / High (${urgentCount})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setRoleTab(tab.id as any)}
+              className={`rounded-xl px-3 py-1.5 transition-all cursor-pointer ${
+                roleTab === tab.id
+                  ? "bg-slate-900 text-white font-bold shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-xl border border-slate-300 bg-white py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+          >
+            <option value="all">All Statuses</option>
+            <option value="open">Open</option>
+            <option value="answered">Answered</option>
+            <option value="escalated">Escalated</option>
+            <option value="closed">Closed</option>
+          </select>
+
+          <div className="relative min-w-[220px]">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search query, email, dept..."
+              className="w-full rounded-xl border border-slate-300 py-1.5 pl-8 pr-3 text-xs focus:outline-none focus:border-indigo-600"
+            />
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+          {error}
+        </div>
+      )}
+
+      {/* Inquiries Table */}
+      {tickets === null && (
+        <div className="divide-y divide-slate-100 py-6 animate-pulse space-y-3">
+          <div className="h-6 w-56 bg-slate-200 rounded" />
+          <div className="h-10 w-full bg-slate-100 rounded" />
+          <div className="h-10 w-full bg-slate-100 rounded" />
+        </div>
+      )}
+
+      {tickets !== null && filteredTickets.length === 0 && (
+        <div className="py-10 text-center rounded-2xl border-2 border-dashed border-slate-200 p-6 space-y-2">
+          <span className="text-3xl">📭</span>
+          <p className="text-xs font-bold text-slate-700">No Student Inquiries Found</p>
+          <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+            No queries match your current filter criteria. Student submissions from the portal will appear here automatically.
+          </p>
+        </div>
+      )}
+
+      {tickets !== null && filteredTickets.length > 0 && (
+        <div className="border border-slate-200 rounded-2xl overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse min-w-[800px]">
+            <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-[11px]">
+              <tr>
+                <th className="py-3 px-4">Student &amp; Ticket</th>
+                <th className="py-3 px-4">Subject &amp; Inquiry Snippet</th>
+                <th className="py-3 px-4">Clerk Destination Desk</th>
+                <th className="py-3 px-4">Priority</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {filteredTickets.map((t) => {
+                const isAdmin = t.target_role === "admin";
+                return (
+                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 align-top">
+                      <p className="font-bold text-slate-900">{t.student_email || "Student"}</p>
+                      <p className="text-[10px] font-mono text-slate-400 mt-0.5">#{t.id.slice(0, 8)}</p>
+                      <p className="text-[10px] text-slate-400">{new Date(t.created_at).toLocaleDateString()}</p>
+                    </td>
+
+                    <td className="py-3 px-4 align-top max-w-[280px]">
+                      <p className="font-semibold text-slate-900 truncate">
+                        {t.subject || "(No Subject)"}
+                      </p>
+                      {t.snippet && (
+                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                          {t.snippet}
+                        </p>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 align-top">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                          isAdmin
+                            ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
+                            : "bg-purple-100 text-purple-800 border border-purple-200"
+                        }`}
+                      >
+                        {isAdmin ? "🏛️ Admin Desk" : "🎓 Faculty Desk"}
+                      </span>
+                      <p className="text-[11px] font-medium text-slate-700 mt-1">
+                        {t.department || (isAdmin ? "General Admin Desk" : "Academic Affairs")}
+                      </p>
+                      {t.assigned_name && (
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          Assigned: <span className="font-semibold text-slate-600">{t.assigned_name}</span>
+                        </p>
+                      )}
+                    </td>
+
+                    <td className="py-3 px-4 align-top">
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                          t.priority === "urgent"
+                            ? "bg-rose-100 text-rose-800 border border-rose-200"
+                            : t.priority === "high"
+                            ? "bg-amber-100 text-amber-800 border border-amber-200"
+                            : "bg-slate-100 text-slate-700"
+                        }`}
+                      >
+                        {t.priority}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4 align-top">
+                      <span
+                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                          t.status === "open"
+                            ? "bg-amber-100 text-amber-800"
+                            : t.status === "answered"
+                            ? "bg-blue-100 text-blue-800"
+                            : t.status === "escalated"
+                            ? "bg-rose-100 text-rose-800"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {t.status}
+                      </span>
+                    </td>
+
+                    <td className="py-3 px-4 align-top text-right space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => openTicketModal(t.id)}
+                        className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 text-xs font-bold transition-all shadow-xs cursor-pointer"
+                      >
+                        Review &amp; Reply →
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Detail & Reply Modal */}
+      {selectedTicketId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-xs overflow-y-auto animate-fade-in">
+          <div className="relative w-full max-w-3xl rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden my-6 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/90 px-6 py-4">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded">
+                    Ticket #{selectedTicketId.slice(0, 8)}
+                  </span>
+                  {activeTicket?.target_role && (
+                    <span
+                      className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase ${
+                        activeTicket.target_role === "admin"
+                          ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
+                          : "bg-purple-100 text-purple-800 border border-purple-200"
+                      }`}
+                    >
+                      {activeTicket.target_role === "admin" ? "🏛️ Admin Queue" : "🎓 Faculty Queue"}
+                    </span>
+                  )}
+                  {activeTicket?.priority && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold rounded-full uppercase bg-slate-200 text-slate-700">
+                      {activeTicket.priority} Priority
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {activeTicket?.subject || "Student Inquiry Details"}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  From: <strong>{activeTicket?.student_email || "Student"}</strong> &middot; Department Desk: <strong>{activeTicket?.department || "General"}</strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeTicketModal}
+                className="rounded-xl p-2 text-slate-400 hover:bg-slate-200 hover:text-slate-700 transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Content / Conversation Thread */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {loadingDetail && (
+                <div className="py-12 text-center text-xs text-slate-400 animate-pulse">
+                  Loading full conversation thread...
+                </div>
+              )}
+
+              {replySuccess && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-800 flex items-center gap-2">
+                  <span>✅</span> {replySuccess}
+                </div>
+              )}
+
+              {activeTicket && !loadingDetail && (
+                <div className="space-y-3">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Conversation &amp; Intake Trail
+                  </p>
+                  <ul className="space-y-3">
+                    {activeTicket.messages.map((msg) => {
+                      const isStudent = msg.sender_type === "student";
+                      const isAi = msg.sender_type === "ai_agent";
+                      const isClerk = isAi && msg.content.includes("Clerk Assistant");
+                      return (
+                        <li
+                          key={msg.id}
+                          className={`rounded-2xl p-4 text-xs border leading-relaxed ${
+                            isStudent
+                              ? "bg-slate-900 text-white border-slate-800 ml-6"
+                              : isClerk
+                              ? "bg-indigo-50/80 border-indigo-200 text-slate-900 mr-6"
+                              : isAi
+                              ? "bg-amber-50/80 border-amber-200 text-slate-900 mr-6"
+                              : "bg-emerald-50/80 border-emerald-200 text-slate-900 mr-6"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="font-bold text-[10px] uppercase tracking-wider opacity-80">
+                              {isClerk
+                                ? "🤖 Clerk Assistant Triage Note"
+                                : isStudent
+                                ? "👤 Student Inquiry"
+                                : isAi
+                                ? "⚡ AI Autonomous Resolution"
+                                : "👨‍💼 Staff / Admin Response"}
+                            </span>
+                            <span className="text-[10px] opacity-60 font-mono">
+                              {new Date(msg.created_at).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* Reassignment / Routing Controls */}
+              {activeTicket && (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 space-y-2">
+                  <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <span>🔀</span> Triage Reassignment &amp; Destination Control
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex-1 min-w-[200px]">
+                      <select
+                        value={reassignUserId}
+                        onChange={(e) => setReassignUserId(e.target.value)}
+                        className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                      >
+                        <option value="">-- Reassign Authority / Specialist --</option>
+                        {users.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.email} ({u.role.toUpperCase()})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={isReassigning}
+                      onClick={handleReassign}
+                      className="rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-4 py-2 cursor-pointer transition-colors disabled:opacity-50"
+                    >
+                      {isReassigning ? "Updating..." : "Update Assignment"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Administrator Response Composer */}
+              {activeTicket && (
+                <form onSubmit={handleSendReply} className="space-y-3 pt-2">
+                  <label className="block text-xs font-bold text-slate-800">
+                    Dispatch Official Administrative Response
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Write official resolution or guidance for this student..."
+                    className="w-full rounded-xl border border-slate-300 p-3 text-xs text-slate-900 focus:outline-none focus:border-indigo-600"
+                    required
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={closeTicketModal}
+                      className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isReplying || !replyText.trim()}
+                      className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 text-xs font-bold shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isReplying ? "Dispatching..." : "Send Response to Student"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function RoutingRulesSection({ accessToken }: { accessToken: string }) {
   const [rules, setRules] = useState<RoutingRuleOut[] | null>(null);
@@ -1540,6 +2088,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Admin Sections */}
+      <ClerkAssistantTriageSection accessToken={accessToken} />
       <KnowledgeBaseApprovalsSection accessToken={accessToken} />
       <AdminPaymentManagementSection accessToken={accessToken} />
       <AdminEmailCommunicationsSection accessToken={accessToken} />

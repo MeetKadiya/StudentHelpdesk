@@ -8,6 +8,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.ticket import MessageOut
+
 
 class RoutingRuleCreate(BaseModel):
     category: str = Field(..., min_length=1, max_length=100)
@@ -67,4 +69,37 @@ class KbApprovalResultOut(BaseModel):
     status: str
     message_id: uuid.UUID
     chunks_indexed: int | None = None
+
+
+class AdminTicketOut(BaseModel):
+    id: uuid.UUID
+    student_id: uuid.UUID
+    student_email: str | None = None
+    subject: str | None = None
+    category: str | None = None
+    status: str
+    assigned_faculty_id: uuid.UUID | None = None
+    assigned_name: str | None = None
+    target_role: str | None = None  # "admin" vs "faculty"
+    department: str | None = None
+    priority: str = "normal"
+    snippet: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminTicketDetailOut(AdminTicketOut):
+    messages: list[MessageOut]
+
+
+class AdminTicketRespond(BaseModel):
+    content: str = Field(..., min_length=1)
+
+
+class AdminTicketReassign(BaseModel):
+    assigned_to_id: uuid.UUID | None = None
+    category: str | None = None
+    status: str | None = None
 

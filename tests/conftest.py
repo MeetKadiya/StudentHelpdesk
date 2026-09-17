@@ -86,10 +86,11 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield ac
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_celery(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     mock_client = MagicMock()
     monkeypatch.setattr(ai_dispatch_service, "_celery_client", mock_client)
+    monkeypatch.setattr("app.workers.celery_app.send_email_notification.apply_async", MagicMock())
     return mock_client
 
 
