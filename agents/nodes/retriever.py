@@ -13,6 +13,7 @@ Until then, `NullRetriever` is used as a safe default: it returns no
 chunks rather than raising, so the graph can run end-to-end (with an
 honest, low-confidence answer) even before ingestion exists.
 """
+
 from __future__ import annotations
 
 from typing import Protocol
@@ -21,8 +22,7 @@ from agents.state.graph_state import AgentState, RetrievedChunk
 
 
 class Retriever(Protocol):
-    def retrieve(self, query: str, *, top_k: int = 5) -> list[RetrievedChunk]:
-        ...
+    def retrieve(self, query: str, *, top_k: int = 5) -> list[RetrievedChunk]: ...
 
 
 class NullRetriever:

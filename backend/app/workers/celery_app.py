@@ -72,5 +72,3 @@ def send_email_notification(to_email: str, subject: str, body: str) -> dict:
             logger.warning("SMTP delivery failed (logged to worker queue instead): %s", err)
 
     return {"status": "sent", "to": to_email, "subject": subject}
-
-

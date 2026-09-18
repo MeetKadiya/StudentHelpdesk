@@ -3,6 +3,7 @@
 lives in agents/worker/graph_runner.py, kept Celery-free so it's directly
 unit-testable — this module is deliberately thin.
 """
+
 from __future__ import annotations
 
 from celery import Celery

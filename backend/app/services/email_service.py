@@ -25,7 +25,9 @@ class EmailServiceError(Exception):
 
 
 async def get_or_create_smtp_config(db: AsyncSession) -> SmtpConfiguration:
-    config = await db.scalar(select(SmtpConfiguration).order_by(SmtpConfiguration.updated_at.desc()).limit(1))
+    config = await db.scalar(
+        select(SmtpConfiguration).order_by(SmtpConfiguration.updated_at.desc()).limit(1)
+    )
     if not config:
         config = SmtpConfiguration(
             smtp_host=os.getenv("SMTP_HOST", ""),
@@ -35,7 +37,9 @@ async def get_or_create_smtp_config(db: AsyncSession) -> SmtpConfiguration:
             smtp_tls=os.getenv("SMTP_TLS", "true").lower() in ("true", "1"),
             from_email=os.getenv("EMAILS_FROM_EMAIL", ""),
             from_name="University Faculty & Academic Advising",
-            is_active=bool(os.getenv("SMTP_HOST") and os.getenv("SMTP_USER") and os.getenv("SMTP_PASSWORD")),
+            is_active=bool(
+                os.getenv("SMTP_HOST") and os.getenv("SMTP_USER") and os.getenv("SMTP_PASSWORD")
+            ),
             last_status="Pending Configuration",
         )
         db.add(config)
@@ -81,7 +85,11 @@ async def update_smtp_config(db: AsyncSession, data: SmtpConfigIn) -> SmtpConfig
 
 def _format_smtp_error(exc: Exception) -> str:
     err_str = str(exc)
-    if "535" in err_str or "BadCredentials" in err_str or "Username and Password not accepted" in err_str:
+    if (
+        "535" in err_str
+        or "BadCredentials" in err_str
+        or "Username and Password not accepted" in err_str
+    ):
         return "Authentication failed (535 Bad Credentials). For Gmail, generate a 16-character App Password at https://myaccount.google.com/apppasswords"
     if "Connection refused" in err_str:
         return "Connection refused by SMTP server. Verify host and port."
@@ -169,7 +177,9 @@ def _deliver_smtp_message(
 async def test_smtp_connection(db: AsyncSession, test_recipient: str) -> dict:
     config = await get_or_create_smtp_config(db)
     if not config.smtp_host or not config.smtp_user or not config.smtp_password:
-        raise EmailServiceError("SMTP configuration is incomplete. Host, username, and password/app password are required.")
+        raise EmailServiceError(
+            "SMTP configuration is incomplete. Host, username, and password/app password are required."
+        )
 
     sender = config.from_email or config.smtp_user
     success, msg = _deliver_smtp_message(
@@ -223,7 +233,12 @@ async def send_email_to_student(
     delivery_status = "portal_inbox_only"
 
     # Attempt live SMTP delivery if active and configured
-    if smtp_config.is_active and smtp_config.smtp_host and smtp_config.smtp_user and smtp_config.smtp_password:
+    if (
+        smtp_config.is_active
+        and smtp_config.smtp_host
+        and smtp_config.smtp_user
+        and smtp_config.smtp_password
+    ):
         from_addr = smtp_config.from_email or smtp_config.smtp_user
         from_lbl = f"{sender.email} via {smtp_config.from_name}"
         ok, res_msg = _deliver_smtp_message(
@@ -268,8 +283,7 @@ Portal Inbox: http://localhost/inbox""",
     # Queue background task for Celery logging
     try:
         send_email_notification.apply_async(
-            args=[recipient_email, f"[{sender.role.upper()} NOTICE] {subject}", body],
-            queue="email"
+            args=[recipient_email, f"[{sender.role.upper()} NOTICE] {subject}", body], queue="email"
         )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Celery enqueue fallback warning: %s", exc)
@@ -295,10 +309,10 @@ async def send_broadcast_email(
 
     smtp_config = await get_or_create_smtp_config(db)
     is_smtp_ready = bool(
-        smtp_config.is_active and
-        smtp_config.smtp_host and
-        smtp_config.smtp_user and
-        smtp_config.smtp_password
+        smtp_config.is_active
+        and smtp_config.smtp_host
+        and smtp_config.smtp_user
+        and smtp_config.smtp_password
     )
 
     delivered_smtp_count = 0
@@ -313,7 +327,9 @@ async def send_broadcast_email(
         try:
             clean_pwd = smtp_config.smtp_password.replace(" ", "").strip()
             if smtp_config.smtp_port == 465:
-                smtp_server = smtplib.SMTP_SSL(smtp_config.smtp_host, smtp_config.smtp_port, timeout=15)
+                smtp_server = smtplib.SMTP_SSL(
+                    smtp_config.smtp_host, smtp_config.smtp_port, timeout=15
+                )
             else:
                 smtp_server = smtplib.SMTP(smtp_config.smtp_host, smtp_config.smtp_port, timeout=15)
                 if smtp_config.smtp_tls:
@@ -409,7 +425,9 @@ Portal Inbox: http://localhost/inbox""",
 async def list_sent_emails(db: AsyncSession, sender: User) -> list[EmailMessage]:
     """Lists emails sent by the user (or all if admin)."""
     if sender.role == "admin":
-        result = await db.scalars(select(EmailMessage).order_by(EmailMessage.created_at.desc()).limit(100))
+        result = await db.scalars(
+            select(EmailMessage).order_by(EmailMessage.created_at.desc()).limit(100)
+        )
     else:
         result = await db.scalars(
             select(EmailMessage)
@@ -435,7 +453,5 @@ async def list_inbox_emails(db: AsyncSession, current_user: User) -> list[EmailM
 
 async def list_students_directory(db: AsyncSession) -> list[User]:
     """Returns registered students for recipient selection."""
-    result = await db.scalars(
-        select(User).where(User.role == "student").order_by(User.email)
-    )
+    result = await db.scalars(select(User).where(User.role == "student").order_by(User.email))
     return list(result)

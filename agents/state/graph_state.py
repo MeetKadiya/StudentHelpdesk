@@ -10,6 +10,7 @@ Field names are deliberately close to database_schema.md's `tickets`,
 built) has an easy, low-mapping-risk job translating this state into DB
 writes. See agents/README.md "Handoff to AI-04" for the exact mapping.
 """
+
 from __future__ import annotations
 
 from enum import Enum

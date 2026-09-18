@@ -9,7 +9,20 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
     query = request.message.lower().strip()
 
     # 1. Fee Payments, Billing, Receipts & Accounts
-    if any(k in query for k in ["fee", "fees", "pay", "dues", "invoice", "receipt", "tuition", "cost", "installment"]):
+    if any(
+        k in query
+        for k in [
+            "fee",
+            "fees",
+            "pay",
+            "dues",
+            "invoice",
+            "receipt",
+            "tuition",
+            "cost",
+            "installment",
+        ]
+    ):
         return ChatResponse(
             reply=(
                 "**Student Accounts & Fee Payments Guide**:\n\n"
@@ -41,7 +54,22 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
         )
 
     # 2. Examination, Hall Ticket, Seating & Marksheet
-    if any(k in query for k in ["exam", "hall ticket", "admit card", "result", "grade", "marks", "spi", "cpi", "cgpa", "re-evaluation", "recheck"]):
+    if any(
+        k in query
+        for k in [
+            "exam",
+            "hall ticket",
+            "admit card",
+            "result",
+            "grade",
+            "marks",
+            "spi",
+            "cpi",
+            "cgpa",
+            "re-evaluation",
+            "recheck",
+        ]
+    ):
         if any(k in query for k in ["hall ticket", "admit card"]):
             return ChatResponse(
                 reply=(
@@ -103,7 +131,10 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
         )
 
     # 3. Attendance, Class Matrix & Shortage Rules
-    if any(k in query for k in ["attendance", "present", "absent", "leave", "shortage", "classes attended"]):
+    if any(
+        k in query
+        for k in ["attendance", "present", "absent", "leave", "shortage", "classes attended"]
+    ):
         return ChatResponse(
             reply=(
                 "**University Attendance Regulations**:\n\n"
@@ -134,7 +165,10 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
         )
 
     # 4. Lecture Timetable & Daily Schedule
-    if any(k in query for k in ["timetable", "schedule", "class", "classes", "lecture", "period", "routine"]):
+    if any(
+        k in query
+        for k in ["timetable", "schedule", "class", "classes", "lecture", "period", "routine"]
+    ):
         return ChatResponse(
             reply=(
                 "**Weekly Academic Timetable & Lecture Schedule**:\n\n"
@@ -160,7 +194,18 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
         )
 
     # 5. Certificates, Bonafide & Transcripts
-    if any(k in query for k in ["certificate", "bonafide", "transcript", "letter", "enrollment verification", "visa", "passport"]):
+    if any(
+        k in query
+        for k in [
+            "certificate",
+            "bonafide",
+            "transcript",
+            "letter",
+            "enrollment verification",
+            "visa",
+            "passport",
+        ]
+    ):
         return ChatResponse(
             reply=(
                 "**Registrar & Student Documentation Cell**:\n\n"
@@ -186,7 +231,20 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
         )
 
     # 6. Faculty Advising & Office Hours
-    if any(k in query for k in ["faculty", "professor", "teacher", "advisor", "office hours", "consultation", "appointment", "cabin", "room 412"]):
+    if any(
+        k in query
+        for k in [
+            "faculty",
+            "professor",
+            "teacher",
+            "advisor",
+            "office hours",
+            "consultation",
+            "appointment",
+            "cabin",
+            "room 412",
+        ]
+    ):
         return ChatResponse(
             reply=(
                 "**Faculty Academic Advising & Office Hours**:\n\n"
@@ -218,7 +276,20 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
         )
 
     # 7. Wi-Fi, IT Support & Campus Infrastructure
-    if any(k in query for k in ["wifi", "wi-fi", "internet", "network", "password reset", "login issue", "it support", "laptop", "lab"]):
+    if any(
+        k in query
+        for k in [
+            "wifi",
+            "wi-fi",
+            "internet",
+            "network",
+            "password reset",
+            "login issue",
+            "it support",
+            "laptop",
+            "lab",
+        ]
+    ):
         return ChatResponse(
             reply=(
                 "**Campus IT Services & Network Support**:\n\n"
@@ -244,7 +315,10 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
         )
 
     # 8. Greetings & General Inquiries
-    if any(k in query for k in ["hi", "hello", "hey", "good morning", "good afternoon", "who are you", "help"]):
+    if any(
+        k in query
+        for k in ["hi", "hello", "hey", "good morning", "good afternoon", "who are you", "help"]
+    ):
         return ChatResponse(
             reply=(
                 "Hello! 👋 I'm your **University AI Campus Assistant**.\n\n"
@@ -260,9 +334,19 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
             category="general",
             confidence=0.99,
             actions=[
-                ChatAction(label="💳 Check Fee Dues", action_type="pay_fees", target="/fees/history"),
-                ChatAction(label="🎫 Download Hall Ticket", action_type="download_hall_ticket", target="/exam"),
-                ChatAction(label="📅 View Attendance", action_type="view_attendance", target="/attendance/datewise"),
+                ChatAction(
+                    label="💳 Check Fee Dues", action_type="pay_fees", target="/fees/history"
+                ),
+                ChatAction(
+                    label="🎫 Download Hall Ticket",
+                    action_type="download_hall_ticket",
+                    target="/exam",
+                ),
+                ChatAction(
+                    label="📅 View Attendance",
+                    action_type="view_attendance",
+                    target="/attendance/datewise",
+                ),
             ],
             suggested_queries=[
                 "When is my next class?",
@@ -275,7 +359,7 @@ def process_chat_message(request: ChatRequest, user_email: str | None = None) ->
     # Fallback: General campus intelligence with 1-click ticket creation
     return ChatResponse(
         reply=(
-            f"I analyzed your question regarding *\"{request.message}\"*. "
+            f'I analyzed your question regarding *"{request.message}"*. '
             "To give you the most accurate and official institutional guidance, would you like me to connect you directly with the concerned university department or course faculty?"
         ),
         category="general",

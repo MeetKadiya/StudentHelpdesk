@@ -28,7 +28,9 @@ class PaymentServiceError(Exception):
 
 
 async def get_or_create_gateway_config(db: AsyncSession) -> PaymentGatewayConfig:
-    config = await db.scalar(select(PaymentGatewayConfig).order_by(PaymentGatewayConfig.updated_at.desc()).limit(1))
+    config = await db.scalar(
+        select(PaymentGatewayConfig).order_by(PaymentGatewayConfig.updated_at.desc()).limit(1)
+    )
     if not config:
         config = PaymentGatewayConfig(
             provider="sandbox",
@@ -60,7 +62,9 @@ async def get_gateway_config_out(db: AsyncSession) -> PaymentGatewayConfigOut:
     )
 
 
-async def update_gateway_config(db: AsyncSession, data: PaymentGatewayConfigIn) -> PaymentGatewayConfigOut:
+async def update_gateway_config(
+    db: AsyncSession, data: PaymentGatewayConfigIn
+) -> PaymentGatewayConfigOut:
     config = await get_or_create_gateway_config(db)
     config.provider = data.provider
     if data.razorpay_key_id is not None:
@@ -138,7 +142,9 @@ async def verify_and_complete_payment(
 
     # Generate verified receipt details
     receipt_no = f"REC-2026-{uuid.uuid4().hex[:6].upper()}"
-    raw_hash_data = f"{data.order_id}:{data.payment_id}:{txn.amount}:{txn.student_email}:{receipt_no}"
+    raw_hash_data = (
+        f"{data.order_id}:{data.payment_id}:{txn.amount}:{txn.student_email}:{receipt_no}"
+    )
     receipt_hash = hashlib.sha256(raw_hash_data.encode("utf-8")).hexdigest()
 
     txn.payment_id = data.payment_id
@@ -150,7 +156,6 @@ async def verify_and_complete_payment(
     if data.payer_details:
         current_notes = txn.notes or ""
         txn.notes = (current_notes + f"\nPayer: {data.payer_details}").strip()
-
 
     # Automatically notify student with payment confirmation in their in-app inbox
     confirmation_notice = EmailMessage(

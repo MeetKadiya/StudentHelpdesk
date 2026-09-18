@@ -15,6 +15,7 @@ been curated yet) are handled cleanly: ingest() returns an index with
 zero vectors rather than erroring, matching AI-01's NullRetriever
 fail-safe philosophy.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass

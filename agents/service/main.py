@@ -25,6 +25,7 @@ graph's `ai-worker depends_on faiss-service`) vs. calling FaissRetriever
 in-process. Both are valid depending on where AI-04 lands; not decided
 here.
 """
+
 from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException

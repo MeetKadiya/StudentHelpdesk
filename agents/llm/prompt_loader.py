@@ -4,6 +4,7 @@ Keeps nodes from hardcoding file paths or duplicating the "## System
 prompt" / "## User prompt template" parsing convention used across all
 prompt files.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -28,8 +29,7 @@ def load_prompt(filename: str) -> PromptTemplate:
 
     if SYSTEM_HEADER not in text or USER_HEADER not in text:
         raise ValueError(
-            f"{filename} is missing the expected '{SYSTEM_HEADER}' / "
-            f"'{USER_HEADER}' sections."
+            f"{filename} is missing the expected '{SYSTEM_HEADER}' / " f"'{USER_HEADER}' sections."
         )
 
     _, rest = text.split(SYSTEM_HEADER, 1)

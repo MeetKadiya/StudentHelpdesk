@@ -102,4 +102,3 @@ class AdminTicketReassign(BaseModel):
     assigned_to_id: uuid.UUID | None = None
     category: str | None = None
     status: str | None = None
-

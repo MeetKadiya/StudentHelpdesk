@@ -14,6 +14,7 @@ a human is a safer failure mode than a hard worker crash on day one, when
 knowledgebase/ is still empty. Revisit once ARCH-DECISION-02 settles and
 there's a real case for calling out to a separately-scaled faiss-service.
 """
+
 from __future__ import annotations
 
 import logging

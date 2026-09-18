@@ -104,12 +104,17 @@ async def apply_ai_result(db: AsyncSession, ticket_id: uuid.UUID, payload: AiRes
                         f"Please log in to your HelpDesk Faculty Portal to review and respond:\n"
                         f"http://localhost:8080/faculty/{ticket.id}\n"
                     )
-                    send_email_notification.apply_async(args=[faculty.email, subj, body], queue="email", retry=False)
-                    logger.info("Enqueued faculty notification email to %s for ticket %s", faculty.email, ticket.id)
+                    send_email_notification.apply_async(
+                        args=[faculty.email, subj, body], queue="email", retry=False
+                    )
+                    logger.info(
+                        "Enqueued faculty notification email to %s for ticket %s",
+                        faculty.email,
+                        ticket.id,
+                    )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Failed to dispatch faculty notification email: %s", exc)
 
     await db.commit()
     await db.refresh(ticket)
     return ticket
-

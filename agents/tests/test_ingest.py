@@ -3,6 +3,7 @@ model download) rather than the real SentenceTransformerEmbedder — this
 environment has no path to the model hub, same honest limitation AI-01
 already documented for OpenAIProvider/GeminiProvider (interface + wiring
 verified for real; live model calls are not)."""
+
 from __future__ import annotations
 
 from agents.rag.ingest import build_chunks, discover_documents, ingest
@@ -55,7 +56,9 @@ def test_discover_documents_handles_missing_subfolders(tmp_path):
 
 
 def test_build_chunks_includes_source_and_category(tmp_path):
-    _write(tmp_path / "faqs" / "wifi.md", "Connect to CampusWifi using your student ID and password.")
+    _write(
+        tmp_path / "faqs" / "wifi.md", "Connect to CampusWifi using your student ID and password."
+    )
     docs = discover_documents(tmp_path)
 
     chunks = build_chunks(docs, kb_root=tmp_path, chunk_size=800, overlap=100)

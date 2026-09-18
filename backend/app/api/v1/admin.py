@@ -169,7 +169,9 @@ async def get_admin_ticket(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
-@router.post("/tickets/{ticket_id}/respond", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/tickets/{ticket_id}/respond", response_model=MessageOut, status_code=status.HTTP_201_CREATED
+)
 async def respond_to_ticket_as_admin(
     ticket_id: uuid.UUID,
     payload: AdminTicketRespond,
@@ -178,9 +180,7 @@ async def respond_to_ticket_as_admin(
 ) -> MessageOut:
     """Administrator replies directly to a student ticket."""
     try:
-        message = await admin_service.respond_as_admin(
-            db, ticket_id, admin.id, payload.content
-        )
+        message = await admin_service.respond_as_admin(db, ticket_id, admin.id, payload.content)
         return MessageOut.model_validate(message)
     except AdminServiceError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
@@ -207,4 +207,3 @@ async def reassign_ticket_queue(
         return AdminTicketOut.model_validate(detail)
     except AdminServiceError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-

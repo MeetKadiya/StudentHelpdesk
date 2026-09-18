@@ -7,6 +7,7 @@ Persistence: the FAISS index and its parallel metadata list are saved to
 two separate files (index.faiss + chunks.jsonl) — paths come from
 AgentSettings.FAISS_INDEX_PATH / FAISS_METADATA_PATH, not hardcoded here.
 """
+
 from __future__ import annotations
 
 import json

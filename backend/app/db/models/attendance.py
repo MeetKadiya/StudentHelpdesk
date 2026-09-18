@@ -35,7 +35,10 @@ class AttendanceRecord(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("attendance_sessions.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("attendance_sessions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     student_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
@@ -47,4 +50,6 @@ class AttendanceRecord(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    session: Mapped["AttendanceSession"] = relationship("AttendanceSession", back_populates="records")
+    session: Mapped["AttendanceSession"] = relationship(
+        "AttendanceSession", back_populates="records"
+    )

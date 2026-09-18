@@ -7,6 +7,7 @@ Word-boundary-safe, character-budgeted chunking with an overlap window
 (not token-exact — a cheap, dependency-free approximation is fine here;
 embedding models tokenize their own way regardless).
 """
+
 from __future__ import annotations
 
 

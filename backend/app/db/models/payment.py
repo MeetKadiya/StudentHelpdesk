@@ -14,9 +14,7 @@ class PaymentTransaction(Base):
 
     __tablename__ = "payment_transactions"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     student_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
@@ -26,12 +24,16 @@ class PaymentTransaction(Base):
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="INR", nullable=False)
     fee_type: Mapped[str] = mapped_column(String(50), default="tuition", nullable=False)
-    semester: Mapped[str] = mapped_column(String(50), default="Semester 6 - Fall 2026", nullable=False)
+    semester: Mapped[str] = mapped_column(
+        String(50), default="Semester 6 - Fall 2026", nullable=False
+    )
     academic_year: Mapped[str] = mapped_column(String(20), default="2025-2026", nullable=False)
     status: Mapped[str] = mapped_column(String(30), default="pending", nullable=False, index=True)
     payment_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
     gateway_provider: Mapped[str] = mapped_column(String(30), default="sandbox", nullable=False)
-    receipt_no: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True, index=True)
+    receipt_no: Mapped[str | None] = mapped_column(
+        String(50), unique=True, nullable=True, index=True
+    )
     receipt_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[DateTime] = mapped_column(
@@ -47,9 +49,7 @@ class PaymentGatewayConfig(Base):
 
     __tablename__ = "payment_gateway_configs"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     provider: Mapped[str] = mapped_column(String(30), default="sandbox", nullable=False)
     razorpay_key_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     razorpay_key_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)

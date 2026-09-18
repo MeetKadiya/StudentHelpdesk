@@ -9,6 +9,7 @@ pydantic-settings installed here — see agents/requirements.txt). Written
 so the next session (or CI, once DEVOPS-04 lands) can run
 `pytest agents/tests` directly.
 """
+
 from __future__ import annotations
 
 from agents.config import AgentSettings
@@ -33,9 +34,7 @@ def test_prompt_loader_parses_both_sections():
 
 
 def test_parse_confidence_extracts_trailing_float():
-    answer, confidence = _parse_confidence(
-        "You can reset it at the IT portal.\nCONFIDENCE: 0.85"
-    )
+    answer, confidence = _parse_confidence("You can reset it at the IT portal.\nCONFIDENCE: 0.85")
     assert answer == "You can reset it at the IT portal."
     assert confidence == 0.85
 

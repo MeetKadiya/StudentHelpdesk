@@ -26,6 +26,7 @@ time regardless of caller). Fine at this knowledgebase's expected scale
 (FaissIndex's own docstring already made this tradeoff); revisit only if
 profiling shows it's a real problem.
 """
+
 from __future__ import annotations
 
 import hashlib

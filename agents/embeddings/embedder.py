@@ -7,6 +7,7 @@ agents/ stays importable without sentence-transformers installed.
 Nodes/ingest code call get_embedder(settings) and only see the Embedder
 protocol, never sentence_transformers directly.
 """
+
 from __future__ import annotations
 
 from typing import Protocol
@@ -15,12 +16,10 @@ from agents.config import AgentSettings
 
 
 class Embedder(Protocol):
-    def embed(self, texts: list[str]) -> list[list[float]]:
-        ...
+    def embed(self, texts: list[str]) -> list[list[float]]: ...
 
     @property
-    def dimension(self) -> int:
-        ...
+    def dimension(self) -> int: ...
 
 
 class SentenceTransformerEmbedder:

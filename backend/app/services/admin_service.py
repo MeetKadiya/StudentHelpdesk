@@ -178,16 +178,18 @@ async def list_pending_kb_approvals(db: AsyncSession) -> list[dict]:
             .order_by(Message.created_at)
         )
         faculty = await db.get(User, msg.sender_id) if msg.sender_id else None
-        items.append({
-            "message_id": msg.id,
-            "ticket_id": msg.ticket_id,
-            "category": ticket.category if ticket else None,
-            "question": first_msg.content if first_msg else "(Question not recorded)",
-            "answer": msg.content,
-            "faculty_id": msg.sender_id,
-            "faculty_email": faculty.email if faculty else None,
-            "created_at": msg.created_at,
-        })
+        items.append(
+            {
+                "message_id": msg.id,
+                "ticket_id": msg.ticket_id,
+                "category": ticket.category if ticket else None,
+                "question": first_msg.content if first_msg else "(Question not recorded)",
+                "answer": msg.content,
+                "faculty_id": msg.sender_id,
+                "faculty_email": faculty.email if faculty else None,
+                "created_at": msg.created_at,
+            }
+        )
     return items
 
 
@@ -256,7 +258,9 @@ async def list_all_tickets(
 
     for ticket in tickets:
         student = await db.get(User, ticket.student_id)
-        assigned_user = await db.get(User, ticket.assigned_faculty_id) if ticket.assigned_faculty_id else None
+        assigned_user = (
+            await db.get(User, ticket.assigned_faculty_id) if ticket.assigned_faculty_id else None
+        )
 
         # First student inquiry snippet
         first_msg = await db.scalar(
@@ -277,22 +281,24 @@ async def list_all_tickets(
         if assigned_user:
             assigned_name = assigned_user.email
 
-        enriched.append({
-            "id": ticket.id,
-            "student_id": ticket.student_id,
-            "student_email": student.email if student else None,
-            "subject": ticket.subject,
-            "category": ticket.category,
-            "status": ticket.status,
-            "assigned_faculty_id": ticket.assigned_faculty_id,
-            "assigned_name": assigned_name,
-            "target_role": triage.target_role,
-            "department": triage.department,
-            "priority": triage.priority,
-            "snippet": snippet_text[:160] if snippet_text else None,
-            "created_at": ticket.created_at,
-            "updated_at": ticket.updated_at,
-        })
+        enriched.append(
+            {
+                "id": ticket.id,
+                "student_id": ticket.student_id,
+                "student_email": student.email if student else None,
+                "subject": ticket.subject,
+                "category": ticket.category,
+                "status": ticket.status,
+                "assigned_faculty_id": ticket.assigned_faculty_id,
+                "assigned_name": assigned_name,
+                "target_role": triage.target_role,
+                "department": triage.department,
+                "priority": triage.priority,
+                "snippet": snippet_text[:160] if snippet_text else None,
+                "created_at": ticket.created_at,
+                "updated_at": ticket.updated_at,
+            }
+        )
 
     return enriched
 
@@ -306,7 +312,9 @@ async def get_admin_ticket_detail(db: AsyncSession, ticket_id: uuid.UUID) -> dic
         raise AdminServiceError("Ticket not found.")
 
     student = await db.get(User, ticket.student_id)
-    assigned_user = await db.get(User, ticket.assigned_faculty_id) if ticket.assigned_faculty_id else None
+    assigned_user = (
+        await db.get(User, ticket.assigned_faculty_id) if ticket.assigned_faculty_id else None
+    )
 
     messages = list(
         await db.scalars(
@@ -373,7 +381,9 @@ async def respond_as_admin(
                 f"Administrator Response:\n{content}\n\n"
                 f"Review your ticket anytime at:\nhttp://localhost:8080/tickets/{ticket.id}\n"
             )
-            send_email_notification.apply_async(args=[student.email, subj, body], queue="email", retry=False)
+            send_email_notification.apply_async(
+                args=[student.email, subj, body], queue="email", retry=False
+            )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to dispatch email for admin ticket reply: %s", exc)
 
@@ -409,4 +419,3 @@ async def reassign_ticket(
     await db.commit()
     await db.refresh(ticket)
     return ticket
-

@@ -4,6 +4,7 @@ to the sentence-transformers model hub (same limitation already
 documented for AI-01/AI-02), so this proves the HTTP wrapper's request/
 response handling and caching behavior, not end-to-end embedding quality.
 """
+
 from __future__ import annotations
 
 import pytest

@@ -20,7 +20,9 @@ class SmtpConfiguration(Base):
     smtp_password: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     smtp_tls: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     from_email: Mapped[str] = mapped_column(String(255), nullable=False, default="")
-    from_name: Mapped[str] = mapped_column(String(255), nullable=False, default="University Faculty & Academic Advising")
+    from_name: Mapped[str] = mapped_column(
+        String(255), nullable=False, default="University Faculty & Academic Advising"
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     last_status: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_tested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

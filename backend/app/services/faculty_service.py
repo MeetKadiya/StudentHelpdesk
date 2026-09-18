@@ -35,10 +35,7 @@ async def list_routed_tickets(db: AsyncSession, faculty_id: uuid.UUID) -> list[T
     # Scoped strictly to academic/study inquiries and tickets assigned to this faculty desk
     result = await db.scalars(
         select(Ticket)
-        .where(
-            (Ticket.assigned_faculty_id == faculty_id) |
-            (Ticket.category == "academic")
-        )
+        .where((Ticket.assigned_faculty_id == faculty_id) | (Ticket.category == "academic"))
         .order_by(Ticket.created_at.desc())
     )
     return list(result)
@@ -84,8 +81,12 @@ async def respond_to_ticket(
                 f"You can view the full thread and reply anytime at:\n"
                 f"http://localhost:8080/tickets/{ticket.id}\n"
             )
-            send_email_notification.apply_async(args=[student.email, subj, body], queue="email", retry=False)
-            logger.info("Enqueued student email notification to %s for ticket %s", student.email, ticket.id)
+            send_email_notification.apply_async(
+                args=[student.email, subj, body], queue="email", retry=False
+            )
+            logger.info(
+                "Enqueued student email notification to %s for ticket %s", student.email, ticket.id
+            )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to dispatch student email notification: %s", exc)
 
@@ -117,6 +118,7 @@ async def mark_message_verified(
     )
     question = first_msg.content if first_msg else message.content
     from app.services.ai_dispatch_service import enqueue_learning_job
+
     enqueue_learning_job(
         ticket_id=ticket_id,
         message_id=message_id,
@@ -126,4 +128,3 @@ async def mark_message_verified(
     )
 
     return message
-

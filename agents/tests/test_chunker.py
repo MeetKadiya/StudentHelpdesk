@@ -32,7 +32,7 @@ def test_consecutive_chunks_overlap():
     assert len(chunks) > 1
 
     def word_indices(chunk: str) -> set[int]:
-        return {int(w[len("word"):]) for w in chunk.split()}
+        return {int(w[len("word") :]) for w in chunk.split()}
 
     # Genuine invariant: the shared word-index range between adjacent
     # chunks is non-empty (checking only the first/last 3 words is wrong

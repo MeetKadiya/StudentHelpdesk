@@ -3,6 +3,7 @@ agents/tests/test_faiss_index.py and test_ingest.py already established)
 so these tests don't need a real sentence-transformers model download —
 no network path to the model hub in this environment (same limitation
 AI-01/AI-02 already documented)."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -65,12 +66,20 @@ def test_write_verified_answer_creates_expected_file(tmp_path):
 def test_write_verified_answer_is_idempotent_by_ticket_and_message_id(tmp_path):
     kb_root = tmp_path / "knowledgebase"
     path1 = write_verified_answer(
-        kb_root=kb_root, ticket_id="t1", message_id="m1",
-        question="Q", answer="First answer", category=None,
+        kb_root=kb_root,
+        ticket_id="t1",
+        message_id="m1",
+        question="Q",
+        answer="First answer",
+        category=None,
     )
     path2 = write_verified_answer(
-        kb_root=kb_root, ticket_id="t1", message_id="m1",
-        question="Q", answer="Second answer", category=None,
+        kb_root=kb_root,
+        ticket_id="t1",
+        message_id="m1",
+        question="Q",
+        answer="Second answer",
+        category=None,
     )
     # Same (ticket_id, message_id) -> same file, overwritten not duplicated.
     assert path1 == path2
@@ -81,7 +90,9 @@ def test_write_verified_answer_is_idempotent_by_ticket_and_message_id(tmp_path):
 def test_reindex_persists_index_and_metadata(tmp_path):
     kb_root = tmp_path / "knowledgebase"
     write_verified_answer(
-        kb_root=kb_root, ticket_id="t1", message_id="m1",
+        kb_root=kb_root,
+        ticket_id="t1",
+        message_id="m1",
         question="What are the library hours?",
         answer="The library is open 8am-10pm on weekdays.",
         category="general",

@@ -43,6 +43,7 @@ def _format_student_id(user_id: uuid.UUID) -> str:
 
 # --- Assignments Management ---
 
+
 async def list_faculty_assignments(db: AsyncSession, faculty_id: uuid.UUID) -> list[AssignmentOut]:
     result = await db.scalars(
         select(Assignment)
@@ -50,7 +51,7 @@ async def list_faculty_assignments(db: AsyncSession, faculty_id: uuid.UUID) -> l
         .order_by(Assignment.created_at.desc())
     )
     assignments = list(result)
-    
+
     out: list[AssignmentOut] = []
     for a in assignments:
         subs = a.submissions or []
@@ -172,6 +173,7 @@ async def grade_assignment_submission(
 
 # --- Attendance Management ---
 
+
 async def list_attendance_sessions(db: AsyncSession) -> list[AttendanceSessionOut]:
     result = await db.scalars(
         select(AttendanceSession)
@@ -269,10 +271,9 @@ async def record_attendance_session(
 
 # --- Student Roster Directory ---
 
+
 async def get_student_roster(db: AsyncSession) -> list[StudentRosterItemOut]:
-    students_res = await db.scalars(
-        select(User).where(User.role == "student").order_by(User.email)
-    )
+    students_res = await db.scalars(select(User).where(User.role == "student").order_by(User.email))
     students = list(students_res)
 
     total_assignments = await db.scalar(select(func.count(Assignment.id))) or 0
@@ -291,25 +292,27 @@ async def get_student_roster(db: AsyncSession) -> list[StudentRosterItemOut]:
 
     for idx, stu in enumerate(students):
         # Count student attendance
-        attended_count = await db.scalar(
-            select(func.count(AttendanceRecord.id)).where(
-                AttendanceRecord.student_id == stu.id,
-                AttendanceRecord.status.in_(["present", "late"]),
+        attended_count = (
+            await db.scalar(
+                select(func.count(AttendanceRecord.id)).where(
+                    AttendanceRecord.student_id == stu.id,
+                    AttendanceRecord.status.in_(["present", "late"]),
+                )
             )
-        ) or 0
+            or 0
+        )
 
         # Count student submissions
-        submitted_count = await db.scalar(
-            select(func.count(AssignmentSubmission.id)).where(
-                AssignmentSubmission.student_id == stu.id
+        submitted_count = (
+            await db.scalar(
+                select(func.count(AssignmentSubmission.id)).where(
+                    AssignmentSubmission.student_id == stu.id
+                )
             )
-        ) or 0
-
-        att_pct = (
-            round((attended_count / total_sessions) * 100, 1)
-            if total_sessions > 0
-            else 95.0
+            or 0
         )
+
+        att_pct = round((attended_count / total_sessions) * 100, 1) if total_sessions > 0 else 95.0
         # Give fallback realistic score if no sessions registered yet for this student
         if total_sessions > 0 and attended_count == 0:
             att_pct = round(85.0 + (idx % 14), 1)

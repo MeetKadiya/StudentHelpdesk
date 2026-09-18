@@ -6,6 +6,7 @@ Per requirements.md FR-12: "Low-confidence or out-of-scope questions are
 escalated to a human ... not silently guessed." This node is where that
 requirement is actually enforced.
 """
+
 from __future__ import annotations
 
 from agents.config import AgentSettings

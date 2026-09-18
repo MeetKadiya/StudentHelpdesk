@@ -21,7 +21,10 @@ def test_add_and_search_returns_closest_first():
 
 def test_save_and_load_roundtrip(tmp_path):
     index = FaissIndex(dim=2)
-    index.add([[1.0, 0.0], [0.0, 1.0]], [{"content": "x", "source": "s1"}, {"content": "y", "source": "s2"}])
+    index.add(
+        [[1.0, 0.0], [0.0, 1.0]],
+        [{"content": "x", "source": "s1"}, {"content": "y", "source": "s2"}],
+    )
 
     index_path = tmp_path / "index.faiss"
     meta_path = tmp_path / "chunks.jsonl"

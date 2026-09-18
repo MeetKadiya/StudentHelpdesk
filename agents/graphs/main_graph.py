@@ -9,6 +9,7 @@ conversation loop the ai-worker (AI-04) would drive by re-invoking the
 graph on the follow-up message — not a graph-internal loop. Flagged here,
 not built here, since it's an AI-04-scope design tradeoff.
 """
+
 from __future__ import annotations
 
 from langgraph.graph import END, StateGraph

@@ -28,7 +28,6 @@ class BroadcastEmailResultOut(BaseModel):
     status_summary: str
 
 
-
 class EmailOut(BaseModel):
     id: uuid.UUID
     sender_id: uuid.UUID

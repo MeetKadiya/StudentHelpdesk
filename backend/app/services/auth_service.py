@@ -25,7 +25,11 @@ async def signup(db: AsyncSession, email: str, password: str, role: str = "stude
     if existing is not None:
         raise AuthError("An account with this email already exists.")
 
-    assigned_role = role.lower().strip() if role.lower().strip() in ("student", "faculty", "admin") else "student"
+    assigned_role = (
+        role.lower().strip()
+        if role.lower().strip() in ("student", "faculty", "admin")
+        else "student"
+    )
     user = User(email=email, password_hash=hash_password(password), role=assigned_role)
     db.add(user)
     await db.commit()

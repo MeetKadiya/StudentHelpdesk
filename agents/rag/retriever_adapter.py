@@ -11,6 +11,7 @@ faiss-service can be its own docker-compose service/container. Not
 duplicated here — AI-03 should import and reuse FaissRetriever, not
 reimplement retrieval.
 """
+
 from __future__ import annotations
 
 from agents.config import AgentSettings
@@ -53,8 +54,7 @@ class FaissRetriever:
 
         if not index_path.exists():
             raise FileNotFoundError(
-                f"No FAISS index at {index_path} — run "
-                "`python -m agents.rag.ingest` first."
+                f"No FAISS index at {index_path} — run " "`python -m agents.rag.ingest` first."
             )
 
         index = FaissIndex.load(index_path, metadata_path, dim=embedder.dimension)

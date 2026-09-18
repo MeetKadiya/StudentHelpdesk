@@ -3,6 +3,7 @@ SpecialistCategory (agents/state/graph_state.py) using router_prompt_v1.md.
 
 Second node in the graph, per task_board.md AI-01's stated order.
 """
+
 from __future__ import annotations
 
 from agents.llm.prompt_loader import load_prompt

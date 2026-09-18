@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 # --- Assignment Schemas ---
 
+
 class AssignmentCreateIn(BaseModel):
     course_code: str = Field(..., min_length=1, max_length=50)
     course_name: str = Field(..., min_length=1, max_length=255)
@@ -60,6 +61,7 @@ class SubmissionGradeIn(BaseModel):
 
 # --- Attendance Schemas ---
 
+
 class AttendanceRecordIn(BaseModel):
     student_id: uuid.UUID
     student_email: str
@@ -105,6 +107,7 @@ class AttendanceSessionOut(BaseModel):
 
 
 # --- Student Roster Directory Schemas ---
+
 
 class StudentRosterItemOut(BaseModel):
     id: uuid.UUID

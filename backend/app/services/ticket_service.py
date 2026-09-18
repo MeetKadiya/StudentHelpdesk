@@ -29,33 +29,120 @@ def _detect_category(subject: str | None, message: str, category: str | None) ->
     """Classifies the inquiry into an appropriate university department category."""
     if category and category.strip():
         cat_lower = category.lower().strip()
-        for valid in ("academic", "it_support", "admissions_enrollment", "financial_aid_billing", "general"):
+        for valid in (
+            "academic",
+            "it_support",
+            "admissions_enrollment",
+            "financial_aid_billing",
+            "general",
+        ):
             if valid in cat_lower or cat_lower in valid:
                 return valid
-        if any(k in cat_lower for k in ("it", "wifi", "tech", "device", "computer", "network", "system", "login")):
+        if any(
+            k in cat_lower
+            for k in ("it", "wifi", "tech", "device", "computer", "network", "system", "login")
+        ):
             return "it_support"
-        if any(k in cat_lower for k in ("fee", "finance", "billing", "aid", "tuition", "scholarship")):
+        if any(
+            k in cat_lower for k in ("fee", "finance", "billing", "aid", "tuition", "scholarship")
+        ):
             return "financial_aid_billing"
-        if any(k in cat_lower for k in ("course", "grade", "academic", "advising", "class", "exam")):
+        if any(
+            k in cat_lower for k in ("course", "grade", "academic", "advising", "class", "exam")
+        ):
             return "academic"
         if any(k in cat_lower for k in ("admission", "enroll", "registrar", "transcript")):
             return "admissions_enrollment"
 
     text = f"{subject or ''} {message}".lower()
-    if any(k in text for k in ("wifi", "wi-fi", "network", "login", "password", "portal", "canvas", "vpn", "laptop", "software", "device", "printer", "computer", "mfa", "otp", "reset")):
+    if any(
+        k in text
+        for k in (
+            "wifi",
+            "wi-fi",
+            "network",
+            "login",
+            "password",
+            "portal",
+            "canvas",
+            "vpn",
+            "laptop",
+            "software",
+            "device",
+            "printer",
+            "computer",
+            "mfa",
+            "otp",
+            "reset",
+        )
+    ):
         return "it_support"
-    if any(k in text for k in ("fee", "fees", "tuition", "scholarship", "aid", "billing", "bill", "payment", "refund", "receipt", "invoice", "dues", "finance", "loan")):
+    if any(
+        k in text
+        for k in (
+            "fee",
+            "fees",
+            "tuition",
+            "scholarship",
+            "aid",
+            "billing",
+            "bill",
+            "payment",
+            "refund",
+            "receipt",
+            "invoice",
+            "dues",
+            "finance",
+            "loan",
+        )
+    ):
         return "financial_aid_billing"
-    if any(k in text for k in ("grade", "grades", "gpa", "course", "courses", "class", "classes", "syllabus", "professor", "faculty", "exam", "exams", "attendance", "lecture", "homework", "assignment")):
+    if any(
+        k in text
+        for k in (
+            "grade",
+            "grades",
+            "gpa",
+            "course",
+            "courses",
+            "class",
+            "classes",
+            "syllabus",
+            "professor",
+            "faculty",
+            "exam",
+            "exams",
+            "attendance",
+            "lecture",
+            "homework",
+            "assignment",
+        )
+    ):
         return "academic"
-    if any(k in text for k in ("admission", "admissions", "enroll", "enrollment", "apply", "application", "transcript", "transcripts", "transfer", "major", "minor", "degree", "registration", "admit")):
+    if any(
+        k in text
+        for k in (
+            "admission",
+            "admissions",
+            "enroll",
+            "enrollment",
+            "apply",
+            "application",
+            "transcript",
+            "transcripts",
+            "transfer",
+            "major",
+            "minor",
+            "degree",
+            "registration",
+            "admit",
+        )
+    ):
         return "admissions_enrollment"
     return "general"
 
 
-async def _get_owned_ticket(
-    db: AsyncSession, ticket_id: uuid.UUID, user_id: uuid.UUID
-) -> Ticket:
+async def _get_owned_ticket(db: AsyncSession, ticket_id: uuid.UUID, user_id: uuid.UUID) -> Ticket:
     ticket = await db.get(Ticket, ticket_id)
     if ticket is None:
         raise TicketAccessError("Ticket not found.")
@@ -156,8 +243,14 @@ async def create_ticket(
                     f"Please log in to the HelpDesk Faculty Portal to review and respond:\n"
                     f"http://localhost:8080/faculty/{ticket.id}\n"
                 )
-                send_email_notification.apply_async(args=[faculty.email, subj, body], queue="email", retry=False)
-                logger.info("Dispatched faculty notification email to %s for new ticket %s", faculty.email, ticket.id)
+                send_email_notification.apply_async(
+                    args=[faculty.email, subj, body], queue="email", retry=False
+                )
+                logger.info(
+                    "Dispatched faculty notification email to %s for new ticket %s",
+                    faculty.email,
+                    ticket.id,
+                )
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to dispatch faculty notification email: %s", exc)
 
@@ -165,7 +258,6 @@ async def create_ticket(
     enqueue_ai_job(ticket.id, question=message, conversation_history=[])
 
     return ticket
-
 
 
 async def list_tickets_for_student(db: AsyncSession, student_id: uuid.UUID) -> list[Ticket]:

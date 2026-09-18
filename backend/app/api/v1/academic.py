@@ -25,6 +25,7 @@ router = APIRouter()
 
 # --- Assignments Endpoints ---
 
+
 @router.get("/assignments", response_model=list[AssignmentOut])
 async def list_assignments(
     user: User = Depends(require_faculty),
@@ -85,6 +86,7 @@ async def grade_submission(
 
 # --- Attendance Endpoints ---
 
+
 @router.get("/attendance/sessions", response_model=list[AttendanceSessionOut])
 async def list_attendance_sessions(
     user: User = Depends(require_faculty),
@@ -109,6 +111,7 @@ async def record_attendance_session(
 
 
 # --- Student Roster Directory ---
+
 
 @router.get("/students", response_model=list[StudentRosterItemOut])
 async def get_student_roster(
