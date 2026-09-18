@@ -27,7 +27,7 @@ class RoutingRuleOut(BaseModel):
 
 
 class UserRoleUpdate(BaseModel):
-    role: str = Field(..., pattern="^(student|faculty|admin)$")
+    role: str = Field(..., pattern="^(student|faculty|admin|clerk)$")
 
 
 class AnalyticsSummaryOut(BaseModel):

@@ -31,7 +31,13 @@ async def create_ticket(
     db: AsyncSession = Depends(get_db),
 ) -> TicketOut:
     ticket = await ticket_service.create_ticket(
-        db, user.id, payload.subject, payload.message, payload.category
+        db,
+        user.id,
+        payload.subject,
+        payload.message,
+        payload.category,
+        payload.branch,
+        payload.semester,
     )
     return TicketOut.model_validate(ticket)
 
@@ -60,6 +66,10 @@ async def get_ticket(
         subject=ticket.subject,
         status=ticket.status,
         category=ticket.category,
+        branch=ticket.branch,
+        semester=ticket.semester,
+        forwarded_to=ticket.forwarded_to,
+        clerk_notes=ticket.clerk_notes,
         created_at=ticket.created_at,
         updated_at=ticket.updated_at,
         messages=[MessageOut.model_validate(m) for m in messages],

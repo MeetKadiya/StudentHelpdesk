@@ -13,6 +13,10 @@ export interface TicketOut {
   subject: string | null;
   status: string;
   category: string | null;
+  branch?: string | null;
+  semester?: string | null;
+  forwarded_to?: string | null;
+  clerk_notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,7 +39,13 @@ export interface TicketStatusOut {
 
 export function createTicket(
   accessToken: string,
-  input: { subject?: string; message: string; category?: string }
+  input: {
+    subject?: string;
+    message: string;
+    category?: string;
+    branch?: string;
+    semester?: string;
+  }
 ): Promise<TicketOut> {
   return apiFetch<TicketOut>("/tickets", {
     method: "POST",

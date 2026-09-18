@@ -147,7 +147,7 @@ async def _get_owned_ticket(db: AsyncSession, ticket_id: uuid.UUID, user_id: uui
     if ticket is None:
         raise TicketAccessError("Ticket not found.")
     user = await db.get(User, user_id)
-    if user and user.role in ("admin", "faculty"):
+    if user and user.role in ("admin", "faculty", "clerk"):
         return ticket
     if ticket.student_id != user_id:
         raise TicketAccessError("Ticket not found.")
@@ -160,6 +160,8 @@ async def create_ticket(
     subject: str | None,
     message: str,
     category: str | None = None,
+    branch: str | None = None,
+    semester: str | None = None,
 ) -> Ticket:
     # Clerk Assistant Triages and sorts the student inquiry
     triage = triage_student_query(subject, message, category)
@@ -191,6 +193,8 @@ async def create_ticket(
         student_id=student_id,
         subject=subject,
         category=detected_cat,
+        branch=branch,
+        semester=semester,
         assigned_faculty_id=assigned_faculty,
         status="open",
     )

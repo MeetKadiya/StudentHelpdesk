@@ -36,7 +36,7 @@ interface AuthContextValue {
   signup: (
     email: string,
     password: string,
-    role?: "student" | "faculty" | "admin"
+    role?: "student" | "faculty" | "admin" | "clerk"
   ) => Promise<UserOut>;
   logout: () => void;
 }
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signup(
     email: string,
     password: string,
-    role: "student" | "faculty" | "admin" = "student"
+    role: "student" | "faculty" | "admin" | "clerk" = "student"
   ): Promise<UserOut> {
     await apiSignup(email, password, role);
     return await login(email, password);

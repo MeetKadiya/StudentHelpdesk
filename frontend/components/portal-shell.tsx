@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { StudentSidebar } from "@/components/student-sidebar";
 import { FacultySidebar } from "@/components/faculty-sidebar";
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { ClerkSidebar } from "@/components/clerk-sidebar";
 import { CampusChatbot } from "@/components/campus-chatbot";
 import { getDynamicStudentProfile } from "@/data/student-services";
 
@@ -21,7 +22,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const role = user?.role || "student";
   const isFaculty = role === "faculty";
   const isAdmin = role === "admin";
-  const isStudent = !isFaculty && !isAdmin;
+  const isClerk = role === "clerk";
+  const isStudent = !isFaculty && !isAdmin && !isClerk;
 
   // Derive dynamic identity labels
   const emailPrefix = user?.email ? user.email.split("@")[0].split(/[._-]/).filter(Boolean).map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join(" ") : "";
@@ -31,12 +33,16 @@ export function PortalShell({ children }: { children: ReactNode }) {
     ? (emailPrefix ? `Prof. ${emailPrefix}` : "Professor / Faculty")
     : isAdmin
     ? (emailPrefix ? `Admin ${emailPrefix}` : "System Administrator")
+    : isClerk
+    ? (emailPrefix ? `Clerk ${emailPrefix}` : "HelpDesk Clerk")
     : profile.name;
 
   const roleSubtitle = isFaculty
     ? "Faculty Staff • Dept of Computing & IT"
     : isAdmin
     ? "Central System SuperAdmin • IT Ops"
+    : isClerk
+    ? "HelpDesk Clerk • Student Queries & Forwarding"
     : `${profile.enrollmentNo} • Sem 6`;
 
   function handleLogout() {
@@ -58,6 +64,11 @@ export function PortalShell({ children }: { children: ReactNode }) {
             />
           ) : isAdmin ? (
             <AdminSidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+            />
+          ) : isClerk ? (
+            <ClerkSidebar
               isOpen={isSidebarOpen}
               onClose={() => setIsSidebarOpen(false)}
             />
@@ -96,6 +107,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
                         ? "Search inquiries..."
                         : isAdmin
                         ? "Search users, rules..."
+                        : isClerk
+                        ? "Search student queries..."
                         : "Search portal..."
                     }
                     className="w-full rounded-lg sm:rounded-md border border-slate-200 bg-slate-50/70 py-1 sm:py-1.5 pl-2.5 sm:pl-3 pr-8 sm:pr-9 text-xs text-slate-800 placeholder-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all"
@@ -181,6 +194,25 @@ export function PortalShell({ children }: { children: ReactNode }) {
                         Services
                       </Link>
                     </>
+                  ) : isClerk ? (
+                    <>
+                      <Link
+                        href="/clerk"
+                        className={`hover:text-amber-700 transition-colors ${
+                          pathname === "/clerk" ? "text-amber-700 font-bold" : ""
+                        }`}
+                      >
+                        Clerk Desk 📋
+                      </Link>
+                      <Link
+                        href="/services"
+                        className={`hover:text-amber-700 transition-colors ${
+                          pathname === "/services" ? "text-amber-700 font-bold" : ""
+                        }`}
+                      >
+                        Campus Services
+                      </Link>
+                    </>
                   ) : (
                     <>
                       <Link
@@ -249,6 +281,8 @@ export function PortalShell({ children }: { children: ReactNode }) {
                           ? "bg-purple-800 ring-purple-200"
                           : isAdmin
                           ? "bg-slate-900 ring-rose-200"
+                          : isClerk
+                          ? "bg-amber-800 ring-amber-200"
                           : "bg-slate-800 ring-slate-200"
                       }`}
                     >

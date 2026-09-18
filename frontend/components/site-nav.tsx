@@ -11,6 +11,8 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       ? pathname === "/"
       : href === "/faculty"
       ? pathname === "/faculty" || pathname.startsWith("/faculty/")
+      : href === "/clerk"
+      ? pathname === "/clerk" || pathname.startsWith("/clerk/")
       : pathname === href || pathname.startsWith(`${href}/`);
 
   return (
@@ -43,6 +45,7 @@ export function SiteNav() {
   if (isAuthenticated) {
     const isFaculty = user?.role === "faculty";
     const isAdmin = user?.role === "admin";
+    const isClerk = user?.role === "clerk";
 
     return (
       <nav className="flex items-center gap-4 sm:gap-6 text-sm">
@@ -55,6 +58,11 @@ export function SiteNav() {
           <>
             <NavLink href="/admin">Admin Hub</NavLink>
             <NavLink href="/admin/analytics">Analytics</NavLink>
+            <NavLink href="/services">Campus Services</NavLink>
+          </>
+        ) : isClerk ? (
+          <>
+            <NavLink href="/clerk">Clerk Desk 📋</NavLink>
             <NavLink href="/services">Campus Services</NavLink>
           </>
         ) : (
@@ -83,6 +91,8 @@ export function SiteNav() {
                   ? "bg-purple-50 text-purple-800 border-purple-200"
                   : isAdmin
                   ? "bg-rose-50 text-rose-800 border-rose-200"
+                  : isClerk
+                  ? "bg-amber-50 text-amber-800 border-amber-200"
                   : "bg-emerald-50 text-emerald-800 border-emerald-200"
               }`}>
                 {user.role}

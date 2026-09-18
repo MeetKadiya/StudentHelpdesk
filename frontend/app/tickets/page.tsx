@@ -43,6 +43,8 @@ function TicketsContent() {
 
   const [subject, setSubject] = useState(searchParams.get("subject") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "");
+  const [branch, setBranch] = useState("");
+  const [semester, setSemester] = useState("");
   const [message, setMessage] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -79,11 +81,15 @@ function TicketsContent() {
         subject: subject.trim() || undefined,
         message: message.trim(),
         category: category || undefined,
+        branch: branch || undefined,
+        semester: semester || undefined,
       });
       setCreatedTicketId(newTicket.id);
       setSubject("");
       setMessage("");
       setCategory("");
+      setBranch("");
+      setSemester("");
       await refreshTickets(accessToken);
     } catch (err) {
       setSubmitError(err instanceof ApiError ? String(err.detail) : "Something went wrong.");
@@ -144,6 +150,50 @@ function TicketsContent() {
                 className="field-input mt-1.5"
                 placeholder="e.g. Financial aid deadline or Course override"
               />
+            </div>
+
+            <div>
+              <label htmlFor="branch" className="field-label">
+                Academic Branch <span className="font-normal text-ink-faint">(for Clerk &amp; Faculty routing)</span>
+              </label>
+              <select
+                id="branch"
+                value={branch}
+                onChange={(e) => setBranch(e.target.value)}
+                className="field-input mt-1.5"
+              >
+                <option value="">Select Branch (e.g. CSE, IT, AI &amp; DS)</option>
+                <option value="Computer Science & Engineering">Computer Science &amp; Engineering (CSE)</option>
+                <option value="Information Technology">Information Technology (IT)</option>
+                <option value="Artificial Intelligence & Data Science">Artificial Intelligence &amp; Data Science (AI &amp; DS)</option>
+                <option value="Electronics & Communication">Electronics &amp; Communication (ECE)</option>
+                <option value="Mechanical Engineering">Mechanical Engineering (ME)</option>
+                <option value="Civil Engineering">Civil Engineering (CE)</option>
+                <option value="Management Studies">Management Studies (MBA/BBA)</option>
+                <option value="General">General / Applied Sciences</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="semester" className="field-label">
+                Academic Semester <span className="font-normal text-ink-faint">(optional)</span>
+              </label>
+              <select
+                id="semester"
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+                className="field-input mt-1.5"
+              >
+                <option value="">Select Semester (e.g. Sem 1 - 8)</option>
+                <option value="Semester 1">Semester 1</option>
+                <option value="Semester 2">Semester 2</option>
+                <option value="Semester 3">Semester 3</option>
+                <option value="Semester 4">Semester 4</option>
+                <option value="Semester 5">Semester 5</option>
+                <option value="Semester 6">Semester 6</option>
+                <option value="Semester 7">Semester 7</option>
+                <option value="Semester 8">Semester 8</option>
+              </select>
             </div>
           </div>
 
@@ -269,6 +319,16 @@ function TicketsContent() {
                         {ticket.category && (
                           <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 inline-block">
                             {ticket.category}
+                          </span>
+                        )}
+                        {ticket.branch && (
+                          <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block">
+                            📍 {ticket.branch}
+                          </span>
+                        )}
+                        {ticket.semester && (
+                          <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 inline-block">
+                            🎓 {ticket.semester}
                           </span>
                         )}
                         <span

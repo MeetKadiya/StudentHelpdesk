@@ -23,6 +23,10 @@ class Ticket(Base):
     assigned_faculty_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
+    branch: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    semester: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    forwarded_to: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    clerk_notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

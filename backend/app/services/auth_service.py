@@ -27,7 +27,7 @@ async def signup(db: AsyncSession, email: str, password: str, role: str = "stude
 
     assigned_role = (
         role.lower().strip()
-        if role.lower().strip() in ("student", "faculty", "admin")
+        if role.lower().strip() in ("student", "faculty", "admin", "clerk")
         else "student"
     )
     user = User(email=email, password_hash=hash_password(password), role=assigned_role)

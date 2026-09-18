@@ -27,7 +27,7 @@ export function getMe(accessToken: string): Promise<UserOut> {
 export function signup(
   email: string,
   password: string,
-  role: "student" | "faculty" | "admin" = "student"
+  role: "student" | "faculty" | "admin" | "clerk" = "student"
 ): Promise<UserOut> {
   return apiFetch<UserOut>("/auth/signup", {
     method: "POST",

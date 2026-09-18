@@ -23,6 +23,4 @@ ENV PYTHONUNBUFFERED=1 \
 
 EXPOSE 8000
 
-# Run pending migrations, then start the API. If migrations fail, the
-# container fails fast rather than serving against a stale schema.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

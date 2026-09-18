@@ -13,7 +13,29 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(settings.DATABASE_URL, echo=settings.DEBUG, future=True)
+engine_kwargs: dict = {
+    "echo": settings.DEBUG,
+    "future": True,
+    "pool_pre_ping": True,
+    "pool_recycle": 300,
+}
+
+if "sqlite" not in settings.DATABASE_URL:
+    engine_kwargs["pool_size"] = 10
+    engine_kwargs["max_overflow"] = 20
+
+connect_args: dict = {}
+if (
+    "supabase" in settings.DATABASE_URL
+    or "6543" in settings.DATABASE_URL
+    or "pooler" in settings.DATABASE_URL
+):
+    connect_args["statement_cache_size"] = 0
+
+if connect_args:
+    engine_kwargs["connect_args"] = connect_args
+
+engine = create_async_engine(settings.DATABASE_URL, **engine_kwargs)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine,

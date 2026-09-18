@@ -30,9 +30,13 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             v_stripped = v.strip()
             if v_stripped.startswith("postgres://"):
-                return v_stripped.replace("postgres://", "postgresql+asyncpg://", 1)
-            if v_stripped.startswith("postgresql://") and not v_stripped.startswith("postgresql+"):
-                return v_stripped.replace("postgresql://", "postgresql+asyncpg://", 1)
+                v_stripped = v_stripped.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v_stripped.startswith("postgresql://") and not v_stripped.startswith(
+                "postgresql+"
+            ):
+                v_stripped = v_stripped.replace("postgresql://", "postgresql+asyncpg://", 1)
+            if "sslmode=" in v_stripped:
+                v_stripped = v_stripped.replace("sslmode=", "ssl=")
             return v_stripped
         return v
 
@@ -60,6 +64,7 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] | str = [
         "*",
+        "https://student-help-desk-sou.vercel.app",
         "http://localhost",
         "http://localhost:80",
         "http://localhost:3000",

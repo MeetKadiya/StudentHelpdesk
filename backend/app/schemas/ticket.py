@@ -9,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class TicketCreate(BaseModel):
     subject: str | None = None
     category: str | None = None
+    branch: str | None = None
+    semester: str | None = None
     message: str = Field(..., min_length=1, description="Initial question content.")
 
 
@@ -31,6 +33,10 @@ class TicketOut(BaseModel):
     subject: str | None
     status: str
     category: str | None
+    branch: str | None = None
+    semester: str | None = None
+    forwarded_to: str | None = None
+    clerk_notes: str | None = None
     created_at: datetime
     updated_at: datetime
 

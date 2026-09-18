@@ -80,3 +80,4 @@ def require_role(*roles: str):
 
 
 require_faculty = require_role("faculty")
+require_clerk = require_role("clerk", "admin")
