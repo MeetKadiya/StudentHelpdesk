@@ -53,49 +53,49 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center py-6 px-3 sm:px-6">
-      <div className="w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200/90 grid grid-cols-1 lg:grid-cols-12">
+    <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center py-3 sm:py-6 px-2 sm:px-4 lg:px-6 pb-24 sm:pb-8">
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-xl sm:shadow-2xl border border-slate-200/90 grid grid-cols-1 lg:grid-cols-12">
         
         {/* Left Side: Campus Identity */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-[#1e293b] via-[#243350] to-[#141d2e] p-7 sm:p-9 text-white flex flex-col justify-between relative overflow-hidden">
+        <div className="lg:col-span-5 bg-gradient-to-br from-[#1e293b] via-[#243350] to-[#141d2e] p-5 sm:p-7 lg:p-9 text-white flex flex-col justify-between relative overflow-hidden">
           <div className="absolute -right-16 -bottom-16 w-56 h-56 rounded-full bg-rose-500/10 blur-2xl pointer-events-none" />
           <div className="absolute -left-12 -top-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
 
-          <div className="relative z-10 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md text-2xl border border-white/20 shadow-md">
+          <div className="relative z-10 space-y-4 sm:space-y-6">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md text-xl sm:text-2xl border border-white/20 shadow-md">
                 🏛️
               </div>
               <div>
-                <span className="block font-black tracking-widest text-[11px] text-rose-300 uppercase">
+                <span className="block font-black tracking-widest text-[10px] sm:text-[11px] text-rose-300 uppercase">
                   UNIVERSITY PORTAL
                 </span>
-                <span className="block font-bold text-sm text-white">
-                  Academic & Administrative Registration
+                <span className="block font-bold text-xs sm:text-sm text-white">
+                  Academic &amp; Administrative Registration
                 </span>
               </div>
             </div>
 
-            <div className="pt-2 space-y-2">
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+            <div className="pt-1 sm:pt-2 space-y-1 sm:space-y-2">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-snug">
                 {role === "faculty"
                   ? "Activate Faculty & Staff Access"
                   : role === "admin"
                   ? "Activate Administrator Access"
                   : "Activate Your Student Account"}
               </h1>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
                 {role === "faculty"
-                  ? "Register your official faculty email address to access student advising, ticket routing, course teaching matrices, and official responses."
+                  ? "Register your official faculty email address to access student advising, ticket routing, and course teaching matrices."
                   : role === "admin"
                   ? "Register institutional administrator credentials to manage user roles, system routing rules, and real-time support analytics."
                   : "Register your institutional email address to immediately access course schedules, exam marksheets, fee payments, and academic helpdesk services."}
               </p>
             </div>
 
-            <div className="space-y-2.5 pt-3 text-xs text-slate-200">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">✓</span>
+            <div className="space-y-2 pt-2 text-[11px] sm:text-xs text-slate-200">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <span className="flex h-4 w-4 sm:h-5 sm:w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[9px] sm:text-[10px]">✓</span>
                 <span>
                   {role === "faculty"
                     ? "Verified Faculty Staff Registration"
@@ -104,18 +104,18 @@ export default function SignupPage() {
                     : "Instant Enrollment Verification"}
                 </span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">✓</span>
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <span className="flex h-4 w-4 sm:h-5 sm:w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[9px] sm:text-[10px]">✓</span>
                 <span>
                   {role === "faculty"
-                    ? "Departmental Ticket Routing & Response Desk"
+                    ? "Departmental Ticket Routing & Desk"
                     : role === "admin"
                     ? "Access & Role Assignment Governance"
                     : "Access to 9 Interactive Campus Services"}
                 </span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">✓</span>
+              <div className="hidden sm:flex items-center gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">✓</span>
                 <span>
                   {role === "faculty"
                     ? "Course Management & Advising Matrix"
@@ -126,31 +126,31 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/10 space-y-1.5 text-xs text-slate-300">
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold text-[11px]">
+            <div className="pt-3 sm:pt-4 border-t border-white/10 space-y-1 text-[10px] sm:text-xs text-slate-300">
+              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[10px] sm:text-[11px]">
                 <span>🛡️ Official Institutional Verification</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="hidden sm:block text-[11px] text-slate-400 leading-relaxed">
                 Accounts are authenticated against the campus student records and human resources database.
               </p>
             </div>
           </div>
 
-          <div className="relative z-10 pt-6 mt-6 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
+          <div className="relative z-10 pt-3 sm:pt-6 mt-3 sm:mt-6 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400">
             <span>🔒 256-Bit SSL Encrypted</span>
             <span>Academic Year 2025-2026</span>
           </div>
         </div>
 
         {/* Right Side: Registration Form */}
-        <div className="lg:col-span-7 p-7 sm:p-10 flex flex-col justify-between bg-white">
+        <div className="lg:col-span-7 p-4 xs:p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-white">
           <div>
-            <div className="space-y-1.5 mb-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <div className="space-y-1.5 mb-4 sm:mb-6">
+              <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between items-start gap-1.5">
+                <h2 className="text-lg xs:text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
                   Create Campus Account
                 </h2>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
+                <span className={`rounded-full px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                   role === "faculty"
                     ? "bg-purple-100 text-purple-800"
                     : role === "admin"
@@ -160,20 +160,20 @@ export default function SignupPage() {
                   {role === "faculty" ? "Faculty Registration" : role === "admin" ? "Admin Registration" : "Student Registration"}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
                 Choose your primary role to configure your personalized institutional workspace.
               </p>
             </div>
 
             {/* Account Role Selector */}
-            <div className="mb-5 p-1 rounded-xl bg-slate-100 flex items-center gap-1 text-xs font-semibold text-slate-600">
+            <div className="mb-4 sm:mb-5 p-1 rounded-xl bg-slate-100 grid grid-cols-3 gap-1 text-[11px] sm:text-xs font-semibold text-slate-600">
               <button
                 type="button"
                 onClick={() => {
                   setRole("student");
                   setError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+                className={`py-2 px-1 rounded-lg text-center transition-all cursor-pointer truncate ${
                   role === "student"
                     ? "bg-white text-slate-900 shadow-xs font-bold"
                     : "hover:text-slate-900"
@@ -187,13 +187,14 @@ export default function SignupPage() {
                   setRole("faculty");
                   setError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+                className={`py-2 px-1 rounded-lg text-center transition-all cursor-pointer truncate ${
                   role === "faculty"
                     ? "bg-white text-purple-900 shadow-xs font-bold"
                     : "hover:text-slate-900"
                 }`}
               >
-                Faculty / Staff 👨‍🏫
+                <span className="sm:hidden">Faculty 👨‍🏫</span>
+                <span className="hidden sm:inline">Faculty / Staff 👨‍🏫</span>
               </button>
               <button
                 type="button"
@@ -201,13 +202,14 @@ export default function SignupPage() {
                   setRole("admin");
                   setError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all ${
+                className={`py-2 px-1 rounded-lg text-center transition-all cursor-pointer truncate ${
                   role === "admin"
                     ? "bg-white text-rose-900 shadow-xs font-bold"
                     : "hover:text-slate-900"
                 }`}
               >
-                Administrator 🛡️
+                <span className="sm:hidden">Admin 🏛️</span>
+                <span className="hidden sm:inline">Administrator 🏛️</span>
               </button>
             </div>
 

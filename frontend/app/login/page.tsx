@@ -198,96 +198,96 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center py-6 px-3 sm:px-6">
-      <div className="w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200/90 grid grid-cols-1 lg:grid-cols-12">
+    <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center py-3 sm:py-6 px-2 sm:px-4 lg:px-6 pb-24 sm:pb-8">
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-xl sm:shadow-2xl border border-slate-200/90 grid grid-cols-1 lg:grid-cols-12">
         
         {/* Left Side: Institutional Campus Branding & Overview */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-[#1e293b] via-[#243350] to-[#141d2e] p-7 sm:p-9 text-white flex flex-col justify-between relative overflow-hidden">
+        <div className="lg:col-span-5 bg-gradient-to-br from-[#1e293b] via-[#243350] to-[#141d2e] p-5 sm:p-7 lg:p-9 text-white flex flex-col justify-between relative overflow-hidden">
           {/* Subtle decorative background circles */}
           <div className="absolute -right-16 -bottom-16 w-56 h-56 rounded-full bg-rose-500/10 blur-2xl pointer-events-none" />
           <div className="absolute -left-12 -top-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
 
-          <div className="relative z-10 space-y-6">
+          <div className="relative z-10 space-y-4 sm:space-y-6">
             {/* University Crest / Seal */}
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md text-2xl border border-white/20 shadow-md">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl sm:rounded-2xl bg-white/10 backdrop-blur-md text-xl sm:text-2xl border border-white/20 shadow-md">
                 🏛️
               </div>
               <div>
-                <span className="block font-black tracking-widest text-[11px] text-rose-300 uppercase">
+                <span className="block font-black tracking-widest text-[10px] sm:text-[11px] text-rose-300 uppercase">
                   UNIVERSITY PORTAL
                 </span>
-                <span className="block font-bold text-sm text-white">
-                  Academic & Administrative Hub
+                <span className="block font-bold text-xs sm:text-sm text-white">
+                  Academic &amp; Administrative Hub
                 </span>
               </div>
             </div>
 
-            <div className="pt-2 space-y-2">
-              <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+            <div className="pt-1 sm:pt-2 space-y-1 sm:space-y-2">
+              <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-snug">
                 Integrated Campus Management System
               </h1>
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
                 Access your academic courses, lecture timetables, verified exam results, fee payments, and faculty advising through secure single sign-on.
               </p>
             </div>
 
-            {/* Portal Highlights */}
-            <div className="space-y-2.5 pt-3 text-xs text-slate-200">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">
+            {/* Portal Highlights - visible on all screens */}
+            <div className="space-y-2 pt-2 text-[11px] sm:text-xs text-slate-200">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <span className="flex h-4 w-4 sm:h-5 sm:w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[9px] sm:text-[10px]">
                   ✓
                 </span>
-                <span>Provisional Results & SPI / CPI Marksheets</span>
+                <span>Provisional Results &amp; SPI / CPI Marksheets</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <span className="flex h-4 w-4 sm:h-5 sm:w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[9px] sm:text-[10px]">
                   ✓
                 </span>
-                <span>Daily & Datewise Attendance Matrix</span>
+                <span>Daily &amp; Datewise Attendance Matrix</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <span className="flex h-4 w-4 sm:h-5 sm:w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[9px] sm:text-[10px]">
                   ✓
                 </span>
-                <span>Faculty Advising & Routed Inquiries</span>
+                <span>Faculty Advising &amp; Routed Inquiries</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">
+              <div className="hidden sm:flex items-center gap-2.5">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">
                   ✓
                 </span>
-                <span>Administrator Governance & Role Directory</span>
+                <span>Administrator Governance &amp; Role Directory</span>
               </div>
             </div>
 
-            {/* System Security & Access Notice */}
-            <div className="pt-4 border-t border-white/10 space-y-1.5 text-xs text-slate-300">
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold text-[11px]">
-                <span>🛡️ Institutional Protection & SSL Verified</span>
+            {/* System Security Notice */}
+            <div className="pt-3 sm:pt-4 border-t border-white/10 space-y-1 text-[10px] sm:text-xs text-slate-300">
+              <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-[10px] sm:text-[11px]">
+                <span>🛡️ Institutional Protection &amp; SSL Verified</span>
               </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="hidden sm:block text-[11px] text-slate-400 leading-relaxed">
                 Authorized institutional access only. Authentication activities are monitored by University IT Services.
               </p>
             </div>
           </div>
 
           {/* Bottom Security Note */}
-          <div className="relative z-10 pt-6 mt-6 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
+          <div className="relative z-10 pt-3 sm:pt-6 mt-3 sm:mt-6 border-t border-white/10 flex items-center justify-between text-[9px] sm:text-[10px] text-slate-400">
             <span>🔒 256-Bit SSL Encrypted</span>
-            <span>Academic Term: Spring 2026</span>
+            <span>Term: Spring 2026</span>
           </div>
         </div>
 
         {/* Right Side: Modern Login Form + CAPTCHA */}
-        <div className="lg:col-span-7 p-7 sm:p-10 flex flex-col justify-between bg-white">
+        <div className="lg:col-span-7 p-4 xs:p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-white">
           <div>
             {/* Header */}
-            <div className="space-y-1.5 mb-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+            <div className="space-y-1.5 mb-4 sm:mb-6">
+              <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between items-start gap-1.5">
+                <h2 className="text-lg xs:text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight">
                   Sign In to Campus Portal
                 </h2>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
+                <span className={`rounded-full px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0 ${
                   selectedRole === "faculty"
                     ? "bg-purple-100 text-purple-800"
                     : selectedRole === "admin"
@@ -297,7 +297,7 @@ export default function LoginPage() {
                   {selectedRole === "faculty" ? "Faculty Access" : selectedRole === "admin" ? "Admin Access" : "Student Access"}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500 leading-relaxed">
                 {selectedRole === "faculty"
                   ? "Faculty & Academic Staff Portal. Enter your official university credentials."
                   : selectedRole === "admin"
@@ -307,14 +307,14 @@ export default function LoginPage() {
             </div>
 
             {/* Role Selection Tabs */}
-            <div className="mb-5 p-1 rounded-xl bg-slate-100 flex items-center gap-1 text-xs font-semibold text-slate-600">
+            <div className="mb-4 sm:mb-5 p-1 rounded-xl bg-slate-100 grid grid-cols-3 gap-1 text-[11px] sm:text-xs font-semibold text-slate-600">
               <button
                 type="button"
                 onClick={() => {
                   setSelectedRole("student");
                   setError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                className={`py-2 px-1 rounded-lg text-center transition-all cursor-pointer truncate ${
                   selectedRole === "student"
                     ? "bg-white text-slate-900 shadow-xs font-bold"
                     : "hover:text-slate-900"
@@ -328,13 +328,14 @@ export default function LoginPage() {
                   setSelectedRole("faculty");
                   setError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                className={`py-2 px-1 rounded-lg text-center transition-all cursor-pointer truncate ${
                   selectedRole === "faculty"
                     ? "bg-white text-purple-900 shadow-xs font-bold"
                     : "hover:text-slate-900"
                 }`}
               >
-                Faculty / Staff 👨‍🏫
+                <span className="sm:hidden">Faculty 👨‍🏫</span>
+                <span className="hidden sm:inline">Faculty / Staff 👨‍🏫</span>
               </button>
               <button
                 type="button"
@@ -342,27 +343,29 @@ export default function LoginPage() {
                   setSelectedRole("admin");
                   setError(null);
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
+                className={`py-2 px-1 rounded-lg text-center transition-all cursor-pointer truncate ${
                   selectedRole === "admin"
                     ? "bg-white text-rose-900 shadow-xs font-bold"
                     : "hover:text-slate-900"
                 }`}
               >
-                Administrator 🛡️
+                <span className="sm:hidden">Admin 🏛️</span>
+                <span className="hidden sm:inline">Administrator 🏛️</span>
               </button>
             </div>
 
             {/* Student Helper Box */}
             {selectedRole === "student" && (
-              <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-950 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-bold flex items-center gap-1.5 text-emerald-900">
-                      <span>🎓</span> Quick Student Accounts (Pass: <code className="bg-emerald-100 text-emerald-800 px-1 py-0.5 rounded font-mono text-[10px]">TestPassword123!</code>)
+              <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-2.5 sm:p-3 text-xs text-emerald-950 space-y-1.5 sm:space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <div className="flex flex-wrap items-center gap-1.5 font-bold text-emerald-900 text-xs">
+                    <span>🎓 Quick Student Accounts</span>
+                    <span className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200">
+                      Pass: TestPassword123!
                     </span>
-                    <p className="text-[11px] text-emerald-700">Click any student to auto-fill login credentials:</p>
                   </div>
                 </div>
+                <p className="text-[10px] sm:text-[11px] text-emerald-700">Tap any student to auto-fill login credentials:</p>
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                   {[
                     { label: "Aarav Sharma", email: "aarav.sharma@student.university.edu", dept: "CSE" },
@@ -380,9 +383,9 @@ export default function LoginPage() {
                         setPassword("TestPassword123!");
                         if (error) setError(null);
                       }}
-                      className="text-left p-1.5 rounded-lg border border-emerald-200 bg-white hover:bg-emerald-100/70 hover:border-emerald-300 transition-all cursor-pointer shadow-xs"
+                      className="text-left p-1.5 sm:p-2 rounded-lg border border-emerald-200 bg-white hover:bg-emerald-100/70 hover:border-emerald-300 active:scale-[0.98] transition-all cursor-pointer shadow-xs min-w-0"
                     >
-                      <div className="font-bold text-[11px] text-emerald-950 truncate">{s.label}</div>
+                      <div className="font-bold text-[10px] sm:text-[11px] text-emerald-950 truncate">{s.label}</div>
                       <div className="text-[9px] text-emerald-600 truncate">{s.dept}</div>
                     </button>
                   ))}
@@ -392,15 +395,16 @@ export default function LoginPage() {
 
             {/* Faculty Helper Box */}
             {selectedRole === "faculty" && (
-              <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50/70 p-3 text-xs text-purple-950 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="font-bold flex items-center gap-1.5 text-purple-900">
-                      <span>👨‍🏫</span> Faculty Accounts (Pass: <code className="bg-purple-100 text-purple-800 px-1 py-0.5 rounded font-mono text-[10px]">TestPassword123!</code>)
+              <div className="mb-4 rounded-xl border border-purple-200 bg-purple-50/70 p-2.5 sm:p-3 text-xs text-purple-950 space-y-1.5 sm:space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <div className="flex flex-wrap items-center gap-1.5 font-bold text-purple-900 text-xs">
+                    <span>👨‍🏫 Faculty Accounts</span>
+                    <span className="text-[10px] font-mono font-medium text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded border border-purple-200">
+                      Pass: TestPassword123!
                     </span>
-                    <p className="text-[11px] text-purple-700">Click any faculty to auto-fill login credentials:</p>
                   </div>
                 </div>
+                <p className="text-[10px] sm:text-[11px] text-purple-700">Tap any faculty to auto-fill login credentials:</p>
                 <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                   {[
                     { label: "Prof. Sharma", email: "prof.sharma@university.edu", dept: "CSE" },
@@ -418,9 +422,9 @@ export default function LoginPage() {
                         setPassword("TestPassword123!");
                         if (error) setError(null);
                       }}
-                      className="text-left p-1.5 rounded-lg border border-purple-200 bg-white hover:bg-purple-100/70 hover:border-purple-300 transition-all cursor-pointer shadow-xs"
+                      className="text-left p-1.5 sm:p-2 rounded-lg border border-purple-200 bg-white hover:bg-purple-100/70 hover:border-purple-300 active:scale-[0.98] transition-all cursor-pointer shadow-xs min-w-0"
                     >
-                      <div className="font-bold text-[11px] text-purple-950 truncate">{f.label}</div>
+                      <div className="font-bold text-[10px] sm:text-[11px] text-purple-950 truncate">{f.label}</div>
                       <div className="text-[9px] text-purple-600 truncate">{f.dept}</div>
                     </button>
                   ))}
@@ -430,10 +434,10 @@ export default function LoginPage() {
 
             {/* Admin Helper Box */}
             {selectedRole === "admin" && (
-              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50/70 p-3 text-xs text-rose-900 flex items-center justify-between">
+              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 sm:p-3 text-xs text-rose-900 flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2">
                 <div>
-                  <span className="font-bold">Institutional Admin Account:</span>
-                  <p className="text-[11px] text-rose-700">admin@university.edu • AdminPassword123!</p>
+                  <span className="font-bold block text-xs">Institutional Admin Account:</span>
+                  <p className="text-[10px] sm:text-[11px] text-rose-700 font-mono">admin@university.edu • AdminPassword123!</p>
                 </div>
                 <button
                   type="button"
@@ -442,7 +446,7 @@ export default function LoginPage() {
                     setPassword("AdminPassword123!");
                     if (error) setError(null);
                   }}
-                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] px-2.5 py-1 transition-all shadow-xs cursor-pointer shrink-0"
+                  className="rounded-lg bg-rose-600 hover:bg-rose-700 active:scale-95 text-white font-bold text-[10px] sm:text-xs px-3 py-1.5 transition-all shadow-xs cursor-pointer shrink-0 self-start xs:self-center"
                 >
                   Fill Admin
                 </button>
@@ -451,17 +455,17 @@ export default function LoginPage() {
 
             {/* Error Banner */}
             {error && (
-              <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50/90 p-3 text-xs text-rose-800 flex items-start gap-2.5 animate-shake">
+              <div className="mb-4 sm:mb-5 rounded-xl border border-rose-200 bg-rose-50/90 p-3 text-xs text-rose-800 flex items-start gap-2.5 animate-shake">
                 <span className="text-base leading-none">⚠️</span>
                 <div className="flex-1 font-medium leading-relaxed">{error}</div>
               </div>
             )}
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
               {/* Email Field */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
                   {selectedRole === "faculty"
                     ? "Faculty Institutional Email"
                     : selectedRole === "admin"
@@ -487,21 +491,21 @@ export default function LoginPage() {
                         ? "admin.staff@university.edu"
                         : "student.id@university.edu"
                     }
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50/40 py-2.5 pl-10 pr-4 text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50/40 py-2 sm:py-2.5 pl-10 pr-3 sm:pr-4 text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
                   />
                 </div>
               </div>
 
               {/* Password Field */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-slate-700">
                     Account Password
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowForgotModal(true)}
-                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+                    className="text-[10px] sm:text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
                   >
                     Forgot password?
                   </button>
@@ -519,7 +523,7 @@ export default function LoginPage() {
                       if (error) setError(null);
                     }}
                     placeholder="••••••••••••"
-                    className="w-full rounded-xl border border-slate-300 bg-slate-50/40 py-2.5 pl-10 pr-10 text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50/40 py-2 sm:py-2.5 pl-10 pr-10 text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
                   />
                   <button
                     type="button"
@@ -532,8 +536,8 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Security CAPTCHA Challenge */}
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2.5">
+              {/* Security CAPTCHA Challenge - Responsive Row / Stack */}
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 sm:p-3.5 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                     <span>🛡️</span> Security Verification CAPTCHA
@@ -541,33 +545,35 @@ export default function LoginPage() {
                   <span className="text-[10px] text-slate-400 font-medium">Case-insensitive</span>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  {/* Visual Canvas */}
-                  <div className="relative rounded-xl border border-slate-300 overflow-hidden bg-slate-100 shadow-inner">
-                    <canvas
-                      ref={canvasRef}
-                      width={160}
-                      height={46}
-                      className="block cursor-pointer select-none"
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+                  {/* Visual Canvas + Refresh Button Side-by-Side */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative rounded-xl border border-slate-300 overflow-hidden bg-slate-100 shadow-inner shrink-0">
+                      <canvas
+                        ref={canvasRef}
+                        width={150}
+                        height={44}
+                        className="block cursor-pointer select-none max-w-full"
+                        onClick={refreshCaptcha}
+                        title="Click canvas to generate a new CAPTCHA challenge"
+                      />
+                    </div>
+
+                    {/* Refresh Button */}
+                    <button
+                      type="button"
                       onClick={refreshCaptcha}
-                      title="Click canvas to generate a new CAPTCHA challenge"
-                    />
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition-all shadow-xs cursor-pointer"
+                      title="Generate New CAPTCHA Code"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
                   </div>
 
-                  {/* Refresh Button */}
-                  <button
-                    type="button"
-                    onClick={refreshCaptcha}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition-all shadow-xs cursor-pointer"
-                    title="Generate New CAPTCHA Code"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
-
-                  {/* Code Input */}
-                  <div className="flex-1">
+                  {/* Code Input - Always receives 100% width on mobile */}
+                  <div className="flex-1 min-w-0">
                     <input
                       type="text"
                       maxLength={6}
@@ -577,8 +583,8 @@ export default function LoginPage() {
                         setCaptchaError(false);
                         if (error) setError(null);
                       }}
-                      placeholder="Enter code"
-                      className={`w-full rounded-xl border py-2.5 px-3 text-xs sm:text-sm font-bold uppercase tracking-widest text-slate-900 placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal focus:outline-none focus:ring-1 shadow-xs transition-all ${
+                      placeholder="Enter 6-char code"
+                      className={`w-full h-11 rounded-xl border py-2 px-3 text-xs sm:text-sm font-bold uppercase tracking-widest text-slate-900 placeholder:text-slate-400 placeholder:normal-case placeholder:tracking-normal focus:outline-none focus:ring-1 shadow-xs transition-all ${
                         captchaError
                           ? "border-rose-500 bg-rose-50/50 focus:border-rose-600 focus:ring-rose-600"
                           : "border-slate-300 bg-white focus:border-indigo-600 focus:ring-indigo-600"
@@ -586,13 +592,13 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[10px] sm:text-[11px] text-slate-500">
                   Type the 6 security characters shown above to verify human access.
                 </p>
               </div>
 
               {/* Remember Me */}
-              <div className="flex items-center justify-between text-xs pt-1">
+              <div className="flex items-center justify-between text-xs pt-0.5">
                 <label className="flex items-center gap-2 text-slate-600 cursor-pointer font-medium">
                   <input
                     type="checkbox"
@@ -608,7 +614,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full rounded-xl text-white py-3 px-4 text-xs font-bold tracking-wider uppercase shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer ${
+                className={`w-full rounded-xl text-white py-3 px-4 text-xs sm:text-sm font-bold tracking-wider uppercase shadow-md active:scale-[0.99] transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer ${
                   selectedRole === "faculty"
                     ? "bg-purple-900 hover:bg-purple-800"
                     : selectedRole === "admin"
@@ -638,7 +644,7 @@ export default function LoginPage() {
           </div>
 
           {/* Footer */}
-          <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 text-center sm:text-left">
+          <div className="mt-6 sm:mt-8 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 text-center sm:text-left">
             <p>
               New applicant or student?{" "}
               <Link href="/signup" className="font-bold text-indigo-600 hover:text-indigo-800 hover:underline">

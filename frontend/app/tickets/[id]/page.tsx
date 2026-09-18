@@ -147,9 +147,12 @@ export default function TicketDetailPage() {
         </Link>
         <div className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                Ticket #{ticket.id}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                title={ticket.id}
+                className="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200"
+              >
+                Ticket #{ticket.id.slice(0, 8).toUpperCase()}
               </span>
               {ticket.category && (
                 <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200">
@@ -157,17 +160,19 @@ export default function TicketDetailPage() {
                 </span>
               )}
             </div>
-            <h1 className="font-display text-2xl font-medium text-ink">
+            <h1 className="font-display text-xl sm:text-2xl font-medium text-ink">
               {ticket.subject || "(no subject)"}
             </h1>
           </div>
-          <StatusBadge status={ticket.status} />
+          <div className="self-start sm:self-auto shrink-0">
+            <StatusBadge status={ticket.status} />
+          </div>
         </div>
 
         {(() => {
           const triage = triageStudentQueryClient(ticket.subject, ticket.subject || "", ticket.category);
           return (
-            <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+            <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-3.5 sm:px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
               <div className="flex items-center gap-2">
                 <span className="text-base">🤖</span>
                 <span className="text-slate-700">
@@ -194,7 +199,7 @@ export default function TicketDetailPage() {
           return (
             <li
               key={msg.id}
-              className={`max-w-[85%] animate-fade-in rounded-2xl px-5 py-4 shadow-sm border ${
+              className={`max-w-[94%] sm:max-w-[85%] animate-fade-in rounded-2xl px-3.5 sm:px-5 py-3 sm:py-4 shadow-xs border ${
                 isStudent
                   ? "ml-auto bg-slate-900 text-white border-slate-800"
                   : isClerk

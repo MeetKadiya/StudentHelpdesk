@@ -338,30 +338,32 @@ function ClerkAssistantTriageSection({ accessToken }: { accessToken: string }) {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pt-1">
+        {/* Filter tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none md:flex-wrap text-xs font-semibold">
           {[
-            { id: "all", label: `All Desks (${allTickets.length})` },
-            { id: "admin", label: `🏛️ Administration (${adminCount})` },
-            { id: "faculty", label: `🎓 Faculty (${facultyCount})` },
-            { id: "urgent", label: `⚡ Urgent / High (${urgentCount})` },
+            { id: "all", label: `All Desks (${allTickets.length})`, mobileLabel: `All (${allTickets.length})` },
+            { id: "admin", label: `🏛️ Administration (${adminCount})`, mobileLabel: `🏛️ Admin (${adminCount})` },
+            { id: "faculty", label: `🎓 Faculty (${facultyCount})`, mobileLabel: `🎓 Faculty (${facultyCount})` },
+            { id: "urgent", label: `⚡ Urgent / High (${urgentCount})`, mobileLabel: `⚡ Urgent (${urgentCount})` },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setRoleTab(tab.id as any)}
-              className={`rounded-xl px-3 py-1.5 transition-all cursor-pointer ${
+              className={`rounded-xl px-2.5 sm:px-3 py-1.5 transition-all cursor-pointer shrink-0 ${
                 roleTab === tab.id
                   ? "bg-slate-900 text-white font-bold shadow-xs"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
-              {tab.label}
+              <span className="sm:hidden">{tab.mobileLabel}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -374,7 +376,7 @@ function ClerkAssistantTriageSection({ accessToken }: { accessToken: string }) {
             <option value="closed">Closed</option>
           </select>
 
-          <div className="relative min-w-[220px]">
+          <div className="relative w-full sm:w-56">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
             <input
               type="text"
@@ -413,7 +415,11 @@ function ClerkAssistantTriageSection({ accessToken }: { accessToken: string }) {
       )}
 
       {tickets !== null && filteredTickets.length > 0 && (
-        <div className="border border-slate-200 rounded-2xl overflow-x-auto">
+        <div>
+          <p className="sm:hidden text-[10px] text-slate-500 italic flex items-center gap-1 mb-1.5">
+            <span>👉</span> Swipe sideways to review all inquiry columns &amp; actions
+          </p>
+          <div className="border border-slate-200 rounded-2xl overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse min-w-[800px]">
             <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-[11px]">
               <tr>
@@ -512,6 +518,7 @@ function ClerkAssistantTriageSection({ accessToken }: { accessToken: string }) {
             </tbody>
           </table>
         </div>
+      </div>
       )}
 
       {/* Detail & Reply Modal */}

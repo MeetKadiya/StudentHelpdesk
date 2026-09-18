@@ -71,36 +71,36 @@ export function PortalShell({ children }: { children: ReactNode }) {
           {/* Main Layout Area */}
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
             {/* Top Navigation Bar */}
-            <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 shadow-sm">
-              <div className="flex items-center gap-3 sm:gap-4 flex-1 max-w-lg">
+            <header className="sticky top-0 z-30 flex h-14 sm:h-16 items-center justify-between border-b border-slate-200 bg-white px-3 sm:px-6 shadow-xs">
+              <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-lg min-w-0">
                 {/* Hamburger Toggle */}
                 <button
                   type="button"
                   onClick={() => setIsSidebarOpen((prev) => !prev)}
-                  className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  className="shrink-0 rounded-lg p-1.5 sm:p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300"
                   aria-label="Toggle navigation menu"
                 >
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </button>
 
                 {/* Search Bar */}
-                <div className="relative flex-1 max-w-xs sm:max-w-sm">
+                <div className="relative flex-1 min-w-0 max-w-[170px] xs:max-w-xs sm:max-w-sm">
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={
                       isFaculty
-                        ? "Search inquiries, courses, students..."
+                        ? "Search inquiries..."
                         : isAdmin
-                        ? "Search users, routing rules, system..."
-                        : "Type text to search..."
+                        ? "Search users, rules..."
+                        : "Search portal..."
                     }
-                    className="w-full rounded-md border border-slate-200 bg-slate-50/70 py-1.5 pl-3 pr-9 text-xs text-slate-800 placeholder-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all"
+                    className="w-full rounded-lg sm:rounded-md border border-slate-200 bg-slate-50/70 py-1 sm:py-1.5 pl-2.5 sm:pl-3 pr-8 sm:pr-9 text-xs text-slate-800 placeholder-slate-400 focus:border-slate-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-300 transition-all"
                   />
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2.5 sm:pr-3">
                     <svg className="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
@@ -436,7 +436,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 p-3 sm:p-5 lg:p-7 max-w-7xl w-full mx-auto animate-fade-in">
+            <main className="flex-1 p-3 sm:p-5 lg:p-7 max-w-7xl w-full mx-auto animate-fade-in pb-20 sm:pb-8">
               {children}
             </main>
           </div>
@@ -451,36 +451,45 @@ export function PortalShell({ children }: { children: ReactNode }) {
   // Unauthenticated / Public Shell
   return (
     <div className="min-h-screen bg-paper font-sans text-ink flex flex-col antialiased">
-      <header className="sticky top-0 z-20 border-b border-line bg-paper-raised/85 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 transition-standard hover:opacity-80">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-white font-bold text-sm shadow-sm">
+      <header className="sticky top-0 z-20 border-b border-line bg-paper-raised/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3.5">
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 transition-standard hover:opacity-80 min-w-0">
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white font-bold text-sm shadow-sm">
               🏛️
             </div>
-            <div>
-              <span className="font-bold text-xs uppercase tracking-tight text-slate-900 block leading-tight">
+            <div className="truncate">
+              <span className="font-bold text-xs uppercase tracking-tight text-slate-900 block leading-tight truncate">
                 University Portal
               </span>
-              <span className="font-display text-sm font-medium tracking-tight text-ink block leading-tight">
+              <span className="hidden xs:block font-display text-[11px] sm:text-xs font-medium tracking-tight text-ink-muted leading-tight truncate">
                 Academic Management & Services
               </span>
             </div>
           </Link>
 
-          <nav className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
-            <Link href="/services" className="text-ink-muted hover:text-ink transition-colors">
+          <nav className="flex items-center gap-2 sm:gap-3 text-xs font-semibold shrink-0">
+            <Link
+              href="/services"
+              className="hidden sm:inline-flex text-ink-muted hover:text-ink transition-colors px-2 py-1"
+            >
               Campus Services
             </Link>
-            <Link href="/login" className="text-ink-muted hover:text-ink transition-colors">
+            <Link
+              href="/login"
+              className="text-slate-700 hover:text-slate-900 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-slate-100"
+            >
               Log in
             </Link>
-            <Link href="/signup" className="btn-primary !px-3.5 !py-1.5 text-xs">
+            <Link
+              href="/signup"
+              className="btn-primary !px-3 sm:!px-4 !py-1.5 text-xs shadow-xs"
+            >
               Sign up
             </Link>
           </nav>
         </div>
       </header>
-      <main className="flex-1 mx-auto max-w-7xl w-full px-4 sm:px-6 py-8 animate-fade-in">
+      <main className="flex-1 mx-auto max-w-7xl w-full px-3 sm:px-6 py-4 sm:py-8 animate-fade-in pb-20 sm:pb-8">
         {children}
       </main>
 

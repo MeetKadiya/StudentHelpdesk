@@ -2061,28 +2061,29 @@ export default function FacultyDashboardPage() {
       </div>
 
       {/* Main Tabbed Navigation Bar */}
-      <div className="flex flex-wrap items-center gap-2 p-1.5 bg-slate-200/70 rounded-2xl border border-slate-200 text-xs font-bold">
+      <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl border border-slate-200 text-xs font-bold overflow-x-auto scrollbar-none sm:flex-wrap">
         {[
-          { id: "inquiries", label: "📬 Inquiries & Advising", count: openTicketsCount },
-          { id: "assignments", label: "📝 Assignments & Grading", count: assignmentCount },
-          { id: "attendance", label: "📊 Attendance Tracker" },
-          { id: "students", label: "👥 Student Roster", count: studentCount },
-          { id: "email", label: "✉️ Direct Email Dispatch" },
+          { id: "inquiries", label: "📬 Inquiries & Advising", mobileLabel: "📬 Inquiries", count: openTicketsCount },
+          { id: "assignments", label: "📝 Assignments & Grading", mobileLabel: "📝 Assignments", count: assignmentCount },
+          { id: "attendance", label: "📊 Attendance Tracker", mobileLabel: "📊 Attendance" },
+          { id: "students", label: "👥 Student Roster", mobileLabel: "👥 Roster", count: studentCount },
+          { id: "email", label: "✉️ Direct Email Dispatch", mobileLabel: "✉️ Email" },
         ].map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id as any)}
-            className={`rounded-xl px-4 py-2.5 transition-all cursor-pointer flex items-center gap-2 ${
+            className={`rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
               activeTab === tab.id
                 ? "bg-white text-indigo-700 shadow-sm"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
             }`}
           >
-            <span>{tab.label}</span>
+            <span className="sm:hidden">{tab.mobileLabel}</span>
+            <span className="hidden sm:inline">{tab.label}</span>
             {tab.count !== undefined && (
               <span
-                className={`rounded-full px-2 py-0.5 text-[10px] ${
+                className={`rounded-full px-1.5 sm:px-2 py-0.2 text-[9px] sm:text-[10px] ${
                   activeTab === tab.id ? "bg-indigo-100 text-indigo-800" : "bg-slate-300 text-slate-700"
                 }`}
               >

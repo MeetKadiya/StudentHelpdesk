@@ -176,7 +176,7 @@ export default function HomePage() {
                   <span className="text-slate-600 font-medium">Student Hotline: <strong className="text-slate-800">{profile.phone}</strong></span>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between">
+                <div className="pt-2 flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2">
                   <button
                     type="button"
                     onClick={() => openService("registrar-records")}
@@ -199,16 +199,16 @@ export default function HomePage() {
           {/* RIGHT: Usable Fee Dues & Receipt Generator (5 cols) */}
           <div id="fees-section" className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+              <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 pb-4 border-b border-slate-100 mb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
                     ₹
                   </span>
                   <h2 className="text-base sm:text-lg font-bold text-slate-800">
-                    Student Fee Dues & Billing
+                    Student Fee Dues &amp; Billing
                   </h2>
                 </div>
-                <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200">
+                <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200 self-start xs:self-auto">
                   Invoice #{feeInvoice.invoiceNo}
                 </span>
               </div>
@@ -471,13 +471,13 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg">
+            <div className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg self-start sm:self-auto">
               {profile.program} • {profile.semester} {profile.section}
             </div>
           </div>
 
           {/* Interactive Day Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none sm:flex-wrap">
             {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((day) => {
               const isSelected = selectedDay === day;
               return (
@@ -485,7 +485,7 @@ export default function HomePage() {
                   key={day}
                   type="button"
                   onClick={() => setSelectedDay(day)}
-                  className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                  className={`rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold shrink-0 transition-all cursor-pointer ${
                     isSelected
                       ? "bg-slate-900 text-white shadow-sm"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -498,6 +498,9 @@ export default function HomePage() {
           </div>
 
           {/* Schedule Table */}
+          <p className="sm:hidden text-[10px] text-slate-500 italic flex items-center gap-1 pt-1">
+            <span>👉</span> Swipe sideways to inspect full timetable schedule
+          </p>
           <div className="overflow-x-auto rounded-xl border border-slate-200 scrollbar-thin">
             <table className="w-full text-left text-xs border-collapse min-w-[700px]">
               <thead>

@@ -99,14 +99,14 @@ function TicketsContent() {
   return (
     <div className="space-y-10">
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <p className="font-display text-sm italic text-ledger">Student HelpDesk</p>
-            <h1 className="mt-1 font-display text-2xl font-medium text-ink">
+            <h1 className="mt-1 font-display text-xl sm:text-2xl font-medium text-ink">
               Open a Service Request
             </h1>
           </div>
-          <Link href="/services" className="text-xs font-medium text-stamp hover:underline">
+          <Link href="/services" className="text-xs font-medium text-stamp hover:underline self-start sm:self-auto">
             Browse Campus Services Directory →
           </Link>
         </div>
@@ -214,14 +214,14 @@ function TicketsContent() {
 
           {submitError && <p className="error-banner">{submitError}</p>}
 
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
             <span className="text-xs text-ink-faint">
               An AI specialist will answer immediately. Inquiries needing staff review are escalated to the department.
             </span>
             <button
               type="submit"
               disabled={isSubmitting || message.trim().length === 0}
-              className="btn-primary shrink-0 cursor-pointer"
+              className="btn-primary w-full sm:w-auto shrink-0 cursor-pointer"
             >
               {isSubmitting ? "Submitting…" : "Submit Request"}
             </button>
@@ -255,9 +255,9 @@ function TicketsContent() {
               const triage = triageStudentQueryClient(ticket.subject, ticket.subject || "", ticket.category);
               return (
                 <li key={ticket.id}>
-                  <Link href={`/tickets/${ticket.id}`} className="surface-row flex items-center justify-between">
-                    <div className="min-w-0 pr-4 space-y-1">
-                      <div className="flex items-center gap-2">
+                  <Link href={`/tickets/${ticket.id}`} className="surface-row flex flex-col sm:flex-row sm:items-center sm:justify-between items-start gap-2 p-3 sm:p-4">
+                    <div className="min-w-0 pr-2 sm:pr-4 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                           #{ticket.id.slice(0, 8).toUpperCase()}
                         </span>
@@ -282,7 +282,9 @@ function TicketsContent() {
                         </span>
                       </div>
                     </div>
-                    <StatusBadge status={ticket.status} />
+                    <div className="self-start sm:self-auto shrink-0">
+                      <StatusBadge status={ticket.status} />
+                    </div>
                   </Link>
                 </li>
               );

@@ -164,7 +164,7 @@ export function CampusChatbot() {
             setIsMinimized(false);
           }}
           aria-label="Open AI Campus Assistant"
-          className="fixed bottom-5 right-5 z-40 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 p-3.5 pr-4 text-white shadow-2xl hover:scale-105 hover:shadow-indigo-500/25 active:scale-95 transition-all duration-200 cursor-pointer ring-4 ring-white/30"
+          className="fixed bottom-3 right-3 sm:bottom-6 sm:right-6 z-40 flex items-center gap-2 sm:gap-2.5 rounded-full bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 p-2.5 sm:p-3.5 sm:pr-4 text-white shadow-2xl hover:scale-105 hover:shadow-indigo-500/25 active:scale-95 transition-all duration-200 cursor-pointer ring-2 sm:ring-4 ring-white/30"
         >
           <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-lg shadow-inner">
             🤖
@@ -184,10 +184,10 @@ export function CampusChatbot() {
       {/* Floating Chat Drawer Window */}
       {isOpen && (
         <div
-          className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col overflow-hidden rounded-3xl bg-white shadow-2xl border border-slate-200 transition-all duration-300 ${
+          className={`fixed inset-x-2 bottom-2 sm:inset-x-auto sm:bottom-6 sm:right-6 z-50 flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl bg-white shadow-2xl border border-slate-200 transition-all duration-300 ${
             isMinimized
-              ? "h-14 w-80 shadow-lg"
-              : "h-[540px] max-h-[85vh] w-[95vw] sm:w-[410px]"
+              ? "h-14 w-auto sm:w-80 shadow-lg"
+              : "h-[80vh] sm:h-[540px] max-h-[92vh] w-auto sm:w-[410px]"
           }`}
         >
           {/* Header */}
