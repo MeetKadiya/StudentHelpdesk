@@ -33,6 +33,43 @@ async def lifespan(app: FastAPI):
                 await conn.execute(
                     text("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS clerk_notes VARCHAR(1000);")
                 )
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(255);")
+                )
+                await conn.execute(
+                    text(
+                        "ALTER TABLE users ADD COLUMN IF NOT EXISTS enrollment_number VARCHAR(64);"
+                    )
+                )
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(32);")
+                )
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS branch VARCHAR(100);")
+                )
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS course VARCHAR(100);")
+                )
+                await conn.execute(
+                    text("ALTER TABLE users ADD COLUMN IF NOT EXISTS semester VARCHAR(30);")
+                )
+                await conn.execute(
+                    text(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_enrollment_number ON users (enrollment_number) WHERE enrollment_number IS NOT NULL;"
+                    )
+                )
+                await conn.execute(
+                    text(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_phone_number ON users (phone_number) WHERE phone_number IS NOT NULL;"
+                    )
+                )
+                await conn.execute(
+                    text(
+                        "INSERT INTO exam_control_settings (id, is_active, session_name, fee_amount, updated_at) "
+                        "VALUES (1, false, 'Summer / Spring 2026 Regular & Remedial', 1200, NOW()) "
+                        "ON CONFLICT (id) DO NOTHING;"
+                    )
+                )
     except Exception as exc:  # noqa: BLE001
         logger.warning("Database schema auto-creation notice: %s", exc)
     yield

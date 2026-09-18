@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -10,14 +10,66 @@ import { AdminSidebar } from "@/components/admin-sidebar";
 import { ClerkSidebar } from "@/components/clerk-sidebar";
 import { CampusChatbot } from "@/components/campus-chatbot";
 import { getDynamicStudentProfile } from "@/data/student-services";
+import { changePassword } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 
 export function PortalShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, accessToken } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Change Password Modal State
+  const [showChangePwModal, setShowChangePwModal] = useState(false);
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
+  const [isPwSubmitting, setIsPwSubmitting] = useState(false);
+
+  async function handleChangePassword(e: FormEvent) {
+    e.preventDefault();
+    setPwError(null);
+    setPwSuccess(null);
+    if (newPw !== confirmPw) {
+      setPwError("New passwords do not match.");
+      return;
+    }
+    if (newPw.length < 8) {
+      setPwError("New password must be at least 8 characters.");
+      return;
+    }
+    if (!accessToken) {
+      setPwError("Not authenticated.");
+      return;
+    }
+    setIsPwSubmitting(true);
+    try {
+      const result = await changePassword(accessToken, {
+        old_password: oldPw,
+        new_password: newPw,
+      });
+      if (result.success) {
+        setPwSuccess("✅ Password changed successfully!");
+        setOldPw("");
+        setNewPw("");
+        setConfirmPw("");
+        setTimeout(() => {
+          setShowChangePwModal(false);
+          setPwSuccess(null);
+        }, 2200);
+      } else {
+        setPwError("Password change failed. Please try again.");
+      }
+    } catch (err) {
+      setPwError(err instanceof ApiError ? String(err.detail) : "Failed to change password. Check your current password.");
+    } finally {
+      setIsPwSubmitting(false);
+    }
+  }
 
   const role = user?.role || "student";
   const isFaculty = role === "faculty";
@@ -453,6 +505,21 @@ export function PortalShell({ children }: { children: ReactNode }) {
                         <div className="border-t border-slate-100 pt-1">
                           <button
                             type="button"
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              setPwError(null);
+                              setPwSuccess(null);
+                              setOldPw("");
+                              setNewPw("");
+                              setConfirmPw("");
+                              setShowChangePwModal(true);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                          >
+                            <span>🔑</span> Change Password
+                          </button>
+                          <button
+                            type="button"
                             onClick={handleLogout}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50"
                           >
@@ -478,6 +545,123 @@ export function PortalShell({ children }: { children: ReactNode }) {
 
         {/* AI Campus Assistant Floating Chatbot */}
         <CampusChatbot />
+
+        {/* Change Password Modal */}
+        {showChangePwModal && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                    <span>🔑</span> Change Account Password
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {isStudent
+                      ? "You can change your password. Your email, enrollment number, and other profile details are locked and managed by the University Administration."
+                      : "Update your account login password."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePwModal(false)}
+                  className="text-slate-400 hover:text-slate-700 text-xl font-bold leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="p-5 space-y-4">
+                {pwError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">
+                    ⚠️ {pwError}
+                  </div>
+                )}
+                {pwSuccess && (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">
+                    {pwSuccess}
+                  </div>
+                )}
+
+                {isStudent && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-1.5 text-xs">
+                    <p className="font-bold text-amber-900">🔒 Profile Attributes Locked by Administration</p>
+                    <p className="text-amber-800">Email, Enrollment Number, Phone, Branch, Semester — these are immutable and can only be updated by the Admin.</p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div>
+                        <p className="text-[10px] text-amber-700 font-bold uppercase">Email</p>
+                        <p className="text-xs font-mono font-bold text-amber-950 truncate">{user?.email || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-amber-700 font-bold uppercase">Enrollment No</p>
+                        <p className="text-xs font-mono font-bold text-amber-950">{(user as any)?.enrollment_number || "—"}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={oldPw}
+                    onChange={(e) => setOldPw(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    value={newPw}
+                    onChange={(e) => setNewPw(e.target.value)}
+                    placeholder="At least 8 characters"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={confirmPw}
+                    onChange={(e) => setConfirmPw(e.target.value)}
+                    placeholder="Repeat new password"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePwModal(false)}
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPwSubmitting}
+                    className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+                  >
+                    {isPwSubmitting ? "Updating…" : "🔑 Update Password"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

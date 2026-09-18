@@ -7,6 +7,7 @@ from app.api.deps import get_current_user
 from app.db.models.user import User
 from app.db.session import get_db
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
     SignupRequest,
@@ -17,6 +18,22 @@ from app.services import auth_service
 from app.services.auth_service import AuthError
 
 router = APIRouter()
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    payload: ChangePasswordRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Allows authenticated user (student/faculty/clerk/admin) to change their password."""
+    try:
+        await auth_service.change_password(
+            db, user.id, payload.current_password, payload.new_password
+        )
+    except AuthError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return {"message": "Password changed successfully."}
 
 
 @router.get("/me", response_model=UserOut)
@@ -37,6 +54,11 @@ async def get_me(user: User = Depends(get_current_user)) -> UserOut:
 
 @router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)) -> UserOut:
+    if payload.role.lower().strip() in ("student", "faculty"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student and faculty accounts can only be provisioned by university administration. Please check your official email for credentials or contact Admin.",
+        )
     try:
         user = await auth_service.signup(db, payload.email, payload.password, payload.role)
     except AuthError as exc:

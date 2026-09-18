@@ -4,6 +4,7 @@ management (FR-20, FR-21). All routes require_admin (app/api/deps.py)."""
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import require_admin
@@ -15,10 +16,17 @@ from app.schemas.admin import (
     AdminTicketReassign,
     AdminTicketRespond,
     AnalyticsSummaryOut,
+    ExamControlStatusOut,
+    ExamControlToggleIn,
+    ExamRegistrationItemOut,
+    FacultyCreateIn,
     KbApprovalResultOut,
     PendingKbItemOut,
     RoutingRuleCreate,
     RoutingRuleOut,
+    Student360OverviewOut,
+    StudentCreateIn,
+    StudentCsvImportResult,
     UserRoleUpdate,
 )
 from app.schemas.auth import UserOut
@@ -205,5 +213,92 @@ async def reassign_ticket_queue(
         )
         detail = await admin_service.get_admin_ticket_detail(db, ticket.id)
         return AdminTicketOut.model_validate(detail)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+class CsvImportPayload(BaseModel):
+    csv_content: str
+
+
+@router.post("/students/import-csv", response_model=StudentCsvImportResult)
+async def import_students_csv_endpoint(
+    payload: CsvImportPayload,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> StudentCsvImportResult:
+    """Uploads and processes bulk student CSV with automatic credential dispatch."""
+    try:
+        return await admin_service.import_students_csv(db, payload.csv_content, admin.id)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/users/create-student", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def create_student_account(
+    payload: StudentCreateIn,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Administrator manually creates a verified student account."""
+    try:
+        user = await admin_service.create_single_student(db, admin.id, payload)
+        return UserOut.model_validate(user)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/users/create-faculty", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def create_faculty_account(
+    payload: FacultyCreateIn,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Administrator manually creates a verified faculty account."""
+    try:
+        user = await admin_service.create_single_faculty(db, admin.id, payload)
+        return UserOut.model_validate(user)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.get("/exam-form/status", response_model=ExamControlStatusOut)
+async def get_admin_exam_control_status(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> ExamControlStatusOut:
+    """Retrieves current examination registration form status and stats."""
+    return await admin_service.get_exam_control_status(db)
+
+
+@router.post("/exam-form/toggle", response_model=ExamControlStatusOut)
+async def toggle_admin_exam_form(
+    payload: ExamControlToggleIn,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> ExamControlStatusOut:
+    """Administrator starts or stops the examination form registration window."""
+    return await admin_service.toggle_exam_control(db, admin.id, payload)
+
+
+@router.get("/exam-form/registrations", response_model=list[ExamRegistrationItemOut])
+async def list_student_exam_registrations(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> list[ExamRegistrationItemOut]:
+    """Lists all student examination form registrations."""
+    registrations = await admin_service.list_exam_registrations(db)
+    return [ExamRegistrationItemOut.model_validate(r) for r in registrations]
+
+
+@router.get("/students/{identifier}/overview", response_model=Student360OverviewOut)
+async def get_student_360_overview(
+    identifier: str,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> Student360OverviewOut:
+    """Admin inspects 360-degree student record (fees, marks, results, assignments, attendance)."""
+    try:
+        return await admin_service.get_student_360_overview(db, identifier)
     except AdminServiceError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

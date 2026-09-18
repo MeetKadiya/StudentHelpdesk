@@ -123,3 +123,74 @@ class StudentRosterItemOut(BaseModel):
     total_assignments: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# --- Student Marks & Enrollment Lookup Schemas ---
+
+
+class StudentMarkOut(BaseModel):
+    id: uuid.UUID
+    subject_code: str
+    subject_name: str
+    semester: str
+    internal_marks: float
+    midterm_marks: float
+    final_marks: float
+    total_marks: float
+    grade: str
+    grade_points: int
+    credits: int
+    academic_year: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class StudentAssignmentSubmissionItem(BaseModel):
+    assignment_id: uuid.UUID
+    course_code: str
+    course_name: str
+    title: str
+    total_points: int
+    due_date: datetime
+    submission_id: uuid.UUID | None = None
+    submission_text: str | None = None
+    score: int | None = None
+    feedback: str | None = None
+    status: str = "pending"
+    submitted_at: datetime | None = None
+
+
+class StudentAcademicLookupOut(BaseModel):
+    student_id: uuid.UUID
+    enrollment_number: str
+    name: str
+    email: str
+    phone_number: str | None = None
+    branch: str | None = None
+    course: str | None = None
+    semester: str | None = None
+    marks: list[StudentMarkOut] = []
+    spi: float | None = None
+    cpi: float | None = None
+    assignments: list[StudentAssignmentSubmissionItem] = []
+    attendance_percentage: float = 92.5
+    total_sessions_attended: int = 0
+    total_sessions: int = 0
+
+
+# --- Student Exam Form Schemas ---
+
+
+class ExamFormStatusOut(BaseModel):
+    is_active: bool
+    session_name: str
+    announcement: str | None = None
+    fee_amount: int = 1200
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+
+
+class ExamFormRegisterIn(BaseModel):
+    semester: str = "Semester 6"
+    papers: list[dict[str, str]]
+    payment_reference: str | None = None

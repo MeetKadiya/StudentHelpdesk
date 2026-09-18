@@ -405,14 +405,14 @@ export default function LoginPage() {
                     ? "Administrator Email"
                     : selectedRole === "clerk"
                     ? "Clerk Desk Email"
-                    : "Student Email Address"}
+                    : "Student Email Address or Enrollment Number"}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
-                    ✉️
+                    {selectedRole === "student" ? "🎓" : "✉️"}
                   </span>
                   <input
-                    type="email"
+                    type={selectedRole === "student" ? "text" : "email"}
                     required
                     value={email}
                     onChange={(e) => {
@@ -426,7 +426,7 @@ export default function LoginPage() {
                         ? "admin.staff@university.edu"
                         : selectedRole === "clerk"
                         ? "clerk.desk@university.edu"
-                        : "student.id@university.edu"
+                        : "e.g. 2304050400024 or student.id@university.edu"
                     }
                     className="w-full rounded-xl border border-slate-300 bg-slate-50/40 py-2 sm:py-2.5 pl-10 pr-3 sm:pr-4 text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
                   />

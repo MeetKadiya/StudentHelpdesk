@@ -37,11 +37,28 @@ async def signup(db: AsyncSession, email: str, password: str, role: str = "stude
     return user
 
 
-async def authenticate(db: AsyncSession, email: str, password: str) -> User:
-    user = await db.scalar(select(User).where(User.email == email))
+async def authenticate(db: AsyncSession, identifier: str, password: str) -> User:
+    clean_id = identifier.strip()
+    user = await db.scalar(
+        select(User).where((User.email == clean_id) | (User.enrollment_number == clean_id))
+    )
     if user is None or not verify_password(password, user.password_hash):
-        raise AuthError("Invalid email or password.")
+        raise AuthError("Invalid credentials. Please check your email or enrollment number.")
     return user
+
+
+async def change_password(
+    db: AsyncSession, user_id: uuid.UUID, current_password: str, new_password: str
+) -> None:
+    user = await db.get(User, user_id)
+    if user is None:
+        raise AuthError("User not found.")
+    if not verify_password(current_password, user.password_hash):
+        raise AuthError("Current password entered is incorrect.")
+    if len(new_password.strip()) < 6:
+        raise AuthError("New password must be at least 6 characters long.")
+    user.password_hash = hash_password(new_password.strip())
+    await db.commit()
 
 
 def issue_tokens(user: User) -> tuple[str, str]:

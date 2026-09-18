@@ -248,16 +248,55 @@ export default function SignupPage() {
               </div>
             )}
 
+            {role === "student" || role === "faculty" ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-200/70 text-amber-900 text-xl font-bold">
+                    🏛️
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-amber-950">
+                      Administrator-Provisioned Accounts Only
+                    </h3>
+                    <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
+                      {role === "student"
+                        ? "Public student registration is disabled. Student accounts are created exclusively by the Central University Administration via official CSV roster enrollment. Your credentials have been dispatched directly to your registered Email address and Mobile Number (SMS)."
+                        : "Faculty accounts are provisioned exclusively by the Academic Provost & Campus IT Administration. Please contact your Department Chair or Administrator to receive your official credentials."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-white p-4 border border-amber-200/80 space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                    <span>🔑</span>
+                    <span>Received your login credentials?</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {role === "student"
+                      ? "You can log in immediately using either your official Email Address or your Enrollment Number (e.g. 2304050400024)."
+                      : "You can log in using your official university faculty email and administrator-assigned password."}
+                  </p>
+                  <div className="pt-1">
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2.5 shadow-sm transition-all"
+                    >
+                      <span>🚀</span> Go to Login Portal →
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-amber-900/80 flex items-center gap-2">
+                  <span>ℹ️</span> Need your credentials re-dispatched? Contact the central campus registrar office.
+                </div>
+              </div>
+            ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  {role === "faculty"
-                    ? "Faculty Institutional Email"
-                    : role === "admin"
+                  {role === "admin"
                     ? "Administrator Email"
-                    : role === "clerk"
-                    ? "Clerk Desk Email"
-                    : "Student University Email"}
+                    : "Clerk Desk Email"}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">
@@ -272,13 +311,9 @@ export default function SignupPage() {
                       if (error) setError(null);
                     }}
                     placeholder={
-                      role === "faculty"
-                        ? "faculty.name@university.edu"
-                        : role === "admin"
+                      role === "admin"
                         ? "admin.name@university.edu"
-                        : role === "clerk"
-                        ? "clerk.name@university.edu"
-                        : "student.name@university.edu"
+                        : "clerk.name@university.edu"
                     }
                     className="w-full rounded-xl border border-slate-300 bg-slate-50/40 py-2.5 pl-10 pr-4 text-xs sm:text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
                   />
@@ -342,30 +377,23 @@ export default function SignupPage() {
                 type="submit"
                 disabled={isSubmitting}
                 className={`w-full rounded-xl py-3 px-4 text-xs font-bold tracking-wider uppercase shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer text-white ${
-                  role === "faculty"
-                    ? "bg-purple-900 hover:bg-purple-800"
-                    : role === "admin"
+                  role === "admin"
                     ? "bg-rose-900 hover:bg-rose-800"
-                    : role === "clerk"
-                    ? "bg-amber-900 hover:bg-amber-800"
-                    : "bg-slate-900 hover:bg-slate-800"
+                    : "bg-amber-900 hover:bg-amber-800"
                 }`}
               >
                 {isSubmitting ? (
                   <span>Registering Account...</span>
                 ) : (
                   <span>
-                    {role === "faculty"
-                      ? "Complete Faculty Registration →"
-                      : role === "admin"
+                    {role === "admin"
                       ? "Complete Administrator Registration →"
-                      : role === "clerk"
-                      ? "Complete Clerk Registration →"
-                      : "Complete Student Registration →"}
+                      : "Complete Clerk Registration →"}
                   </span>
                 )}
               </button>
             </form>
+            )}
           </div>
 
           <div className="mt-8 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 text-center sm:text-left">

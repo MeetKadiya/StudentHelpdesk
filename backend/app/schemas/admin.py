@@ -5,9 +5,11 @@ second near-identical class)."""
 
 import uuid
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.schemas.auth import UserOut
 from app.schemas.ticket import MessageOut
 
 
@@ -102,3 +104,100 @@ class AdminTicketReassign(BaseModel):
     assigned_to_id: uuid.UUID | None = None
     category: str | None = None
     status: str | None = None
+
+
+# --- Student & Faculty Provisioning Schemas ---
+
+
+class StudentCreateIn(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    email: EmailStr
+    enrollment_number: str = Field(..., min_length=4, max_length=64)
+    phone_number: str = Field(..., min_length=7, max_length=32)
+    branch: str = Field(..., min_length=2, max_length=100)
+    course: str = Field(default="B.Tech", max_length=100)
+    semester: str = Field(default="Sem 1", max_length=30)
+    password: str | None = None
+
+
+class FacultyCreateIn(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    email: EmailStr
+    department: str = Field(..., min_length=2, max_length=100)
+    phone_number: str | None = None
+    title: str = Field(default="Assistant Professor", max_length=100)
+    password: str | None = None
+
+
+class ImportedStudentItem(BaseModel):
+    name: str
+    email: str
+    enrollment_number: str
+    phone_number: str
+    branch: str
+    course: str
+    semester: str
+    temp_password: str
+    email_dispatched: bool = True
+    sms_dispatched: bool = True
+
+
+class StudentCsvImportResult(BaseModel):
+    total_rows: int
+    created_count: int
+    skipped_count: int
+    created_students: list[ImportedStudentItem]
+    errors: list[str]
+
+
+# --- Exam Form Controller Schemas ---
+
+
+class ExamControlStatusOut(BaseModel):
+    id: int
+    is_active: bool
+    session_name: str
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    announcement: str | None = None
+    fee_amount: int
+    total_registrations: int = 0
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ExamControlToggleIn(BaseModel):
+    is_active: bool
+    session_name: str | None = None
+    announcement: str | None = None
+    fee_amount: int | None = None
+
+
+class ExamRegistrationItemOut(BaseModel):
+    id: uuid.UUID
+    student_id: uuid.UUID
+    enrollment_number: str
+    student_name: str
+    student_email: str
+    branch: str
+    semester: str
+    papers: str
+    status: str
+    submitted_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# --- Student 360 Comprehensive Inspection Schema ---
+
+
+class Student360OverviewOut(BaseModel):
+    student: UserOut
+    fees_summary: dict[str, Any]
+    marks: list[dict[str, Any]]
+    spi: float | None = None
+    cpi: float | None = None
+    assignments: list[dict[str, Any]]
+    attendance: dict[str, Any]
+    exam_registration: dict[str, Any] | None = None

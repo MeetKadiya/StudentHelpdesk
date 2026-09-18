@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRequireStudent } from "@/lib/auth/use-require-student";
@@ -11,16 +11,56 @@ import {
   getDynamicStudentProfile,
 } from "@/data/student-services";
 import { ServiceActionDialog } from "@/components/service-action-dialog";
+import { getExamFormStatus, registerExamForm, type ExamFormStatusOut } from "@/lib/api/academic";
+import { ApiError } from "@/lib/api/client";
 
 export default function ExaminationHubPage() {
   useRequireStudent();
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const profile = getDynamicStudentProfile(user?.email);
   const attendance = getDynamicAttendanceData(user?.email);
   const hallTicket = getDynamicHallTicket(user?.email);
 
   const [isHallTicketModalOpen, setIsHallTicketModalOpen] = useState(false);
   const examService = CAMPUS_SERVICES.find((s) => s.id === "exams-grading") || CAMPUS_SERVICES[1];
+
+  // Live Exam Form Status
+  const [examStatus, setExamStatus] = useState<ExamFormStatusOut | null>(null);
+  const [examStatusError, setExamStatusError] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [regSuccess, setRegSuccess] = useState<string | null>(null);
+  const [regError, setRegError] = useState<string | null>(null);
+  const [selectedPapers, setSelectedPapers] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    getExamFormStatus(accessToken)
+      .then(setExamStatus)
+      .catch(() => setExamStatusError("Unable to check exam form status."));
+  }, [accessToken]);
+
+  async function handleExamRegister(e: FormEvent) {
+    e.preventDefault();
+    if (!accessToken) return;
+    setRegError(null);
+    setRegSuccess(null);
+    setIsRegistering(true);
+    try {
+      const papersPayload = selectedPapers.map((code) => {
+        const found = hallTicket.papers.find((p) => p.code === code);
+        return { code, title: found ? found.name : code };
+      });
+      await registerExamForm(accessToken, {
+        semester: profile.semester || "Semester 6",
+        papers: papersPayload,
+      });
+      setRegSuccess("✅ Examination form submitted successfully! You will receive confirmation on your registered email.");
+    } catch (err) {
+      setRegError(err instanceof ApiError ? String(err.detail) : "Registration failed. Please try again.");
+    } finally {
+      setIsRegistering(false);
+    }
+  }
 
   return (
     <div className="space-y-6 pb-12">
@@ -47,6 +87,135 @@ export default function ExaminationHubPage() {
             <span>📜</span> View Provisional Results →
           </Link>
         </div>
+      </div>
+
+      {/* Live Examination Form Section */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>📋</span> Semester Examination Form Submission
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Admin-controlled registration window for upcoming university examinations.
+            </p>
+          </div>
+          {examStatus && (
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-black inline-flex items-center gap-1.5 ${
+                examStatus.is_active
+                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                  : "bg-rose-100 text-rose-800 border border-rose-200"
+              }`}
+            >
+              {examStatus.is_active ? "🟢 Registration OPEN" : "🔴 Registration CLOSED"}
+            </span>
+          )}
+        </div>
+
+        {examStatusError && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 font-medium">
+            ⚠️ {examStatusError}
+          </div>
+        )}
+
+        {examStatus && !examStatus.is_active && (
+          <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 space-y-1 text-xs">
+            <p className="font-bold text-rose-900">
+              🔒 Examination Registration is currently CLOSED by the Controller of Examinations.
+            </p>
+            <p className="text-rose-700">
+              The examination registration portal for <strong>{examStatus.session_name}</strong> is not accepting submissions at this time. Please check back when announced by the administration.
+            </p>
+            {examStatus.announcement && (
+              <p className="mt-2 text-xs text-slate-700 bg-white/80 p-2 rounded-lg border border-rose-200 font-mono">
+                📢 {examStatus.announcement}
+              </p>
+            )}
+          </div>
+        )}
+
+        {examStatus && examStatus.is_active && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-xs space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <p className="font-bold text-emerald-900">
+                  ✅ Active Session: {examStatus.session_name}
+                </p>
+                <span className="font-bold text-emerald-800">
+                  Examination Fee: ₹{examStatus.fee_amount}
+                </span>
+              </div>
+              {examStatus.announcement && (
+                <p className="text-emerald-700">{examStatus.announcement}</p>
+              )}
+            </div>
+
+            {regSuccess && (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-100/80 p-3 text-xs font-bold text-emerald-900">
+                {regSuccess}
+              </div>
+            )}
+            {regError && (
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-800">
+                ⚠️ {regError}
+              </div>
+            )}
+
+            {!regSuccess && (
+              <form onSubmit={handleExamRegister} className="space-y-4">
+                <p className="text-xs font-bold text-slate-700">
+                  Select Examination Papers for Registration:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {hallTicket.papers.map((p) => {
+                    const isSelected = selectedPapers.includes(p.code);
+                    return (
+                      <label
+                        key={p.code}
+                        className={`flex items-start gap-2.5 p-3 rounded-xl border text-xs cursor-pointer transition-colors ${
+                          isSelected
+                            ? "border-indigo-500 bg-indigo-50/60"
+                            : "border-slate-200 bg-slate-50 hover:bg-slate-100/70"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPapers([...selectedPapers, p.code]);
+                            } else {
+                              setSelectedPapers(selectedPapers.filter((c) => c !== p.code));
+                            }
+                          }}
+                          className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <div>
+                          <p className="font-mono font-bold text-slate-900">{p.code}</p>
+                          <p className="text-slate-700">{p.name}</p>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                  <span className="text-xs text-slate-500">
+                    Selected: {selectedPapers.length} of {hallTicket.papers.length} papers
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={isRegistering}
+                    className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isRegistering ? "Submitting Registration…" : "🚀 Submit Examination Form"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Hero Cards: Quick Actions */}

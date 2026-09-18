@@ -59,6 +59,7 @@ function MessageBubble({
 
 export default function FacultyTicketDetailPage() {
   const params = useParams<{ id: string }>();
+  const ticketId = params?.id;
   const accessToken = useRequireFaculty();
   const [ticket, setTicket] = useState<FacultyTicketDetailOut | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,23 +68,23 @@ export default function FacultyTicketDetailPage() {
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
   function reload() {
-    if (!accessToken) return;
-    getRoutedTicket(accessToken, params.id)
+    if (!accessToken || !ticketId) return;
+    getRoutedTicket(accessToken, ticketId)
       .then(setTicket)
       .catch((err) =>
         setError(err instanceof ApiError ? String(err.detail) : "Failed to load ticket.")
       );
   }
 
-  useEffect(reload, [accessToken, params.id]);
+  useEffect(reload, [accessToken, ticketId]);
 
   async function handleReply(event: FormEvent) {
     event.preventDefault();
-    if (!accessToken || !reply.trim()) return;
+    if (!accessToken || !ticketId || !reply.trim()) return;
     setIsSending(true);
     setError(null);
     try {
-      await respondToTicket(accessToken, params.id, reply.trim());
+      await respondToTicket(accessToken, ticketId, reply.trim());
       setReply("");
       reload();
     } catch (err) {
@@ -94,11 +95,11 @@ export default function FacultyTicketDetailPage() {
   }
 
   async function handleVerify(messageId: string) {
-    if (!accessToken) return;
+    if (!accessToken || !ticketId) return;
     setVerifyingId(messageId);
     setError(null);
     try {
-      await verifyMessage(accessToken, params.id, messageId);
+      await verifyMessage(accessToken, ticketId, messageId);
       reload();
     } catch (err) {
       setError(err instanceof ApiError ? String(err.detail) : "Failed to verify response.");

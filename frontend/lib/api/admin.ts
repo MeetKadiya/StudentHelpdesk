@@ -191,4 +191,218 @@ export function reassignAdminTicket(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Student & Faculty Provisioning & CSV Import
+// ---------------------------------------------------------------------------
+
+export interface ImportedStudentItem {
+  name: string;
+  email: string;
+  enrollment_number: string;
+  phone_number: string;
+  branch: string;
+  course: string;
+  semester: string;
+  temp_password: string;
+  email_dispatched: boolean;
+  sms_dispatched: boolean;
+}
+
+export interface StudentCsvImportResult {
+  total_rows: number;
+  created_count: number;
+  skipped_count: number;
+  created_students: ImportedStudentItem[];
+  errors: string[];
+}
+
+export interface StudentCreateIn {
+  name: string;
+  email: string;
+  enrollment_number: string;
+  phone_number: string;
+  branch: string;
+  course?: string;
+  semester?: string;
+  password?: string;
+}
+
+export interface FacultyCreateIn {
+  name: string;
+  email: string;
+  department: string;
+  phone_number?: string;
+  title?: string;
+  password?: string;
+}
+
+export function importStudentsCsv(
+  accessToken: string,
+  csvContent: string
+): Promise<StudentCsvImportResult> {
+  return apiFetch<StudentCsvImportResult>("/admin/students/import-csv", {
+    method: "POST",
+    body: { csv_content: csvContent },
+    accessToken,
+  });
+}
+
+export function createSingleStudent(
+  accessToken: string,
+  payload: StudentCreateIn
+): Promise<UserOut> {
+  return apiFetch<UserOut>("/admin/users/create-student", {
+    method: "POST",
+    body: payload,
+    accessToken,
+  });
+}
+
+export function createSingleFaculty(
+  accessToken: string,
+  payload: FacultyCreateIn
+): Promise<UserOut> {
+  return apiFetch<UserOut>("/admin/users/create-faculty", {
+    method: "POST",
+    body: payload,
+    accessToken,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Exam Form Controller
+// ---------------------------------------------------------------------------
+
+export interface ExamControlStatusOut {
+  id: number;
+  is_active: boolean;
+  session_name: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  announcement?: string | null;
+  fee_amount: number;
+  total_registrations: number;
+  updated_at: string;
+}
+
+export interface ExamControlToggleIn {
+  is_active: boolean;
+  session_name?: string;
+  announcement?: string;
+  fee_amount?: number;
+}
+
+export interface ExamRegistrationItemOut {
+  id: string;
+  student_id: string;
+  enrollment_number: string;
+  student_name: string;
+  student_email: string;
+  branch: string;
+  semester: string;
+  papers: string;
+  status: string;
+  submitted_at: string;
+}
+
+export function getExamControlStatus(accessToken: string): Promise<ExamControlStatusOut> {
+  return apiFetch<ExamControlStatusOut>("/admin/exam-form/status", {
+    accessToken,
+  });
+}
+
+export function toggleExamControl(
+  accessToken: string,
+  payload: ExamControlToggleIn
+): Promise<ExamControlStatusOut> {
+  return apiFetch<ExamControlStatusOut>("/admin/exam-form/toggle", {
+    method: "POST",
+    body: payload,
+    accessToken,
+  });
+}
+
+export function listExamRegistrations(
+  accessToken: string
+): Promise<ExamRegistrationItemOut[]> {
+  return apiFetch<ExamRegistrationItemOut[]>("/admin/exam-form/registrations", {
+    accessToken,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Student 360 Records Inspection
+// ---------------------------------------------------------------------------
+
+export interface Student360OverviewOut {
+  student: UserOut;
+  fees_summary: {
+    total_assessed: number;
+    total_paid: number;
+    balance_pending: number;
+    status: string;
+    transactions: Array<{
+      id: string;
+      order_id: string;
+      payment_id?: string;
+      amount: number;
+      fee_type: string;
+      status: string;
+      payment_method?: string;
+      receipt_no?: string;
+      created_at?: string;
+    }>;
+  };
+  marks: Array<{
+    id: string;
+    subject_code: string;
+    subject_name: string;
+    semester: string;
+    internal_marks: number;
+    midterm_marks: number;
+    final_marks: number;
+    total_marks: number;
+    grade: string;
+    grade_points: number;
+    credits: number;
+    academic_year: string;
+  }>;
+  spi?: number | null;
+  cpi?: number | null;
+  assignments: Array<{
+    submission_id?: string | null;
+    assignment_id: string;
+    course_code: string;
+    course_name: string;
+    title: string;
+    score?: number | null;
+    total_points: number;
+    status: string;
+    feedback?: string | null;
+    submitted_at?: string | null;
+  }>;
+  attendance: {
+    percentage: number;
+    attended: number;
+    total: number;
+  };
+  exam_registration?: {
+    id: string;
+    session: string;
+    status: string;
+    submitted_at: string;
+  } | null;
+}
+
+export function getStudent360Overview(
+  accessToken: string,
+  identifier: string
+): Promise<Student360OverviewOut> {
+  return apiFetch<Student360OverviewOut>(
+    `/admin/students/${encodeURIComponent(identifier)}/overview`,
+    { accessToken }
+  );
+}
+
+
 

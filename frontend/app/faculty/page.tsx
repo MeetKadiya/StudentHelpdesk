@@ -28,10 +28,12 @@ import {
   listAttendanceSessions,
   recordAttendanceSession,
   getStudentRoster,
+  getStudentByEnrollment,
   type AssignmentOut,
   type AssignmentDetailOut,
   type AttendanceSessionOut,
   type StudentRosterItemOut,
+  type StudentAcademicLookupOut,
 } from "@/lib/api/academic";
 import { ApiError } from "@/lib/api/client";
 
@@ -124,6 +126,224 @@ const FACULTY_DIRECTORY: Record<
     hours: "Mon & Wed 3 PM - 5 PM",
   },
 };
+
+// ----------------------------------------------------
+// Subcomponent: Student Academic Lookup by Enrollment Number
+// ----------------------------------------------------
+function FacultyStudentLookupSection({ accessToken }: { accessToken: string }) {
+  const [enrollmentInput, setEnrollmentInput] = useState("");
+  const [lookupResult, setLookupResult] = useState<StudentAcademicLookupOut | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLookupResult(null);
+    const trimmed = enrollmentInput.trim();
+    if (!trimmed) return;
+    setIsLoading(true);
+    try {
+      const result = await getStudentByEnrollment(accessToken, trimmed);
+      setLookupResult(result);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? String(err.detail)
+          : "Student not found. Check the enrollment number and try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const gradeColor = (grade: string) => {
+    if (["O", "A+", "A"].includes(grade)) return "text-emerald-700 bg-emerald-50";
+    if (["B+", "B"].includes(grade)) return "text-blue-700 bg-blue-50";
+    if (["C", "D"].includes(grade)) return "text-amber-700 bg-amber-50";
+    return "text-rose-700 bg-rose-50";
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <span>🔍</span> Student Academic Records Lookup
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Search for any student&apos;s marks, grades, and assignment submissions using their Enrollment Number.
+          </p>
+        </div>
+      </div>
+
+      {/* Search Form */}
+      <form onSubmit={handleLookup} className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🎓</span>
+          <input
+            type="text"
+            value={enrollmentInput}
+            onChange={(e) => {
+              setEnrollmentInput(e.target.value);
+              setError(null);
+            }}
+            placeholder="Enter Enrollment Number (e.g. 2304050400024)"
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={isLoading || !enrollmentInput.trim()}
+          className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-5 py-2.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2"
+        >
+          {isLoading ? "Searching…" : "🔍 Search Student"}
+        </button>
+      </form>
+
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800 flex items-center gap-2">
+          ⚠️ {error}
+        </div>
+      )}
+
+      {lookupResult && (
+        <div className="space-y-5">
+          {/* Student Identity Card */}
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-200/70 text-indigo-900 font-black text-xl">
+                {lookupResult.name?.charAt(0) || "S"}
+              </div>
+              <div>
+                <p className="text-sm font-black text-slate-900">{lookupResult.name}</p>
+                <p className="text-xs text-slate-600">{lookupResult.email}</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <span className="font-mono text-[11px] font-bold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-md px-2 py-0.5">
+                    {lookupResult.enrollment_number}
+                  </span>
+                  {lookupResult.branch && (
+                    <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-md px-2 py-0.5">
+                      {lookupResult.branch}
+                    </span>
+                  )}
+                  {lookupResult.semester && (
+                    <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-md px-2 py-0.5">
+                      {lookupResult.semester}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              {lookupResult.spi != null && (
+                <div>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase">SPI</p>
+                  <p className="text-lg font-black text-indigo-700">{lookupResult.spi.toFixed(2)}</p>
+                </div>
+              )}
+              {lookupResult.cpi != null && (
+                <div>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase">CPI</p>
+                  <p className="text-lg font-black text-purple-700">{lookupResult.cpi.toFixed(2)}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">Attendance</p>
+                <p className={`text-lg font-black ${lookupResult.attendance_percentage >= 75 ? "text-emerald-700" : "text-rose-700"}`}>
+                  {lookupResult.attendance_percentage.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Marks Table */}
+          {lookupResult.marks.length > 0 && (
+            <div>
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+                📊 Academic Marks ({lookupResult.marks.length} subjects)
+              </h3>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-left text-xs min-w-[650px]">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-700">
+                    <tr>
+                      <th className="py-2.5 px-3">Subject</th>
+                      <th className="py-2.5 px-3">Internal</th>
+                      <th className="py-2.5 px-3">Mid-term</th>
+                      <th className="py-2.5 px-3">Final</th>
+                      <th className="py-2.5 px-3">Total</th>
+                      <th className="py-2.5 px-3">Credits</th>
+                      <th className="py-2.5 px-3">Grade</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {lookupResult.marks.map((m) => (
+                      <tr key={m.id} className="hover:bg-slate-50/70">
+                        <td className="py-2 px-3">
+                          <p className="font-bold text-slate-900">{m.subject_name}</p>
+                          <p className="text-[10px] font-mono text-slate-500">{m.subject_code} • {m.semester}</p>
+                        </td>
+                        <td className="py-2 px-3 font-semibold">{m.internal_marks}</td>
+                        <td className="py-2 px-3 font-semibold">{m.midterm_marks}</td>
+                        <td className="py-2 px-3 font-semibold">{m.final_marks}</td>
+                        <td className="py-2 px-3 font-black text-slate-900">{m.total_marks}</td>
+                        <td className="py-2 px-3">{m.credits}</td>
+                        <td className="py-2 px-3">
+                          <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-black ${gradeColor(m.grade)}`}>
+                            {m.grade}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Assignments */}
+          {lookupResult.assignments.length > 0 && (
+            <div>
+              <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+                📝 Assignment Submissions ({lookupResult.assignments.length})
+              </h3>
+              <div className="space-y-2">
+                {lookupResult.assignments.map((a, idx) => (
+                  <div key={a.assignment_id || idx} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{a.title}</p>
+                      <p className="text-[11px] text-slate-500 font-mono">{a.course_code} — {a.course_name}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {a.score != null && (
+                        <span className="text-xs font-black text-indigo-700">
+                          {a.score} / {a.total_points}
+                        </span>
+                      )}
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                        a.status === "graded" ? "bg-emerald-100 text-emerald-800" :
+                        a.status === "submitted" ? "bg-blue-100 text-blue-800" :
+                        "bg-amber-100 text-amber-800"
+                      }`}>
+                        {a.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {lookupResult.marks.length === 0 && lookupResult.assignments.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500">
+              No academic records found for this student yet.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ----------------------------------------------------
 // Subcomponent: Email Composer, Live SMTP Settings, and Sent Log
@@ -1896,7 +2116,7 @@ export default function FacultyDashboardPage() {
   const accessToken = useRequireFaculty();
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<"inquiries" | "assignments" | "attendance" | "students" | "email">("inquiries");
+  const [activeTab, setActiveTab] = useState<"inquiries" | "assignments" | "attendance" | "students" | "lookup" | "email">("inquiries");
   const [prefilledEmail, setPrefilledEmail] = useState<string>("");
 
   const [tickets, setTickets] = useState<FacultyTicketOut[] | null>(null);
@@ -2067,6 +2287,7 @@ export default function FacultyDashboardPage() {
           { id: "assignments", label: "📝 Assignments & Grading", mobileLabel: "📝 Assignments", count: assignmentCount },
           { id: "attendance", label: "📊 Attendance Tracker", mobileLabel: "📊 Attendance" },
           { id: "students", label: "👥 Student Roster", mobileLabel: "👥 Roster", count: studentCount },
+          { id: "lookup", label: "🔍 Student Lookup", mobileLabel: "🔍 Lookup" },
           { id: "email", label: "✉️ Direct Email Dispatch", mobileLabel: "✉️ Email" },
         ].map((tab) => (
           <button
@@ -2258,7 +2479,12 @@ export default function FacultyDashboardPage() {
         />
       )}
 
-      {/* Tab 5: Direct Email Dispatch */}
+      {/* Tab 5: Student Academic Lookup by Enrollment Number */}
+      {activeTab === "lookup" && (
+        <FacultyStudentLookupSection accessToken={accessToken} />
+      )}
+
+      {/* Tab 6: Direct Email Dispatch */}
       {activeTab === "email" && (
         <FacultyEmailComposerSection
           accessToken={accessToken}

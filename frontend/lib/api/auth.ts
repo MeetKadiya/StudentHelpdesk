@@ -15,7 +15,14 @@ export interface UserOut {
   id: string;
   email: string;
   role: string;
+  name?: string;
+  enrollment_number?: string;
+  phone_number?: string;
+  branch?: string;
+  course?: string;
+  semester?: string;
 }
+
 
 // Added alongside FRONTEND-04 (api_contract.md v0.10) — access tokens
 // only ever encode `sub` (see backend/app/core/security.py), so there was
@@ -48,3 +55,20 @@ export function refresh(refreshToken: string): Promise<TokenResponse> {
     body: { refresh_token: refreshToken },
   });
 }
+
+export interface ChangePasswordRequest {
+  old_password: string;
+  new_password: string;
+}
+
+export function changePassword(
+  accessToken: string,
+  payload: ChangePasswordRequest
+): Promise<{ success: boolean; message: string }> {
+  return apiFetch<{ success: boolean; message: string }>("/auth/change-password", {
+    method: "POST",
+    body: payload,
+    accessToken,
+  });
+}
+

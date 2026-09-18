@@ -5,7 +5,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import require_faculty
+from app.api.deps import get_current_user, require_faculty
 from app.db.models.user import User
 from app.db.session import get_db
 from app.schemas.academic import (
@@ -15,6 +15,9 @@ from app.schemas.academic import (
     AssignmentSubmissionOut,
     AttendanceSessionCreateIn,
     AttendanceSessionOut,
+    ExamFormRegisterIn,
+    ExamFormStatusOut,
+    StudentAcademicLookupOut,
     StudentRosterItemOut,
     SubmissionGradeIn,
 )
@@ -120,3 +123,38 @@ async def get_student_roster(
 ) -> list[StudentRosterItemOut]:
     """Returns full student directory with enrollment, attendance, and assignment metrics."""
     return await academic_service.get_student_roster(db)
+
+
+@router.get("/students/by-enrollment/{enrollment_number}", response_model=StudentAcademicLookupOut)
+async def get_student_by_enrollment(
+    enrollment_number: str,
+    _: User = Depends(require_faculty),
+    db: AsyncSession = Depends(get_db),
+) -> StudentAcademicLookupOut:
+    """Faculties inspect student marks and assignments by their enrollment number."""
+    try:
+        return await academic_service.get_student_by_enrollment(db, enrollment_number)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.get("/exam-form/status", response_model=ExamFormStatusOut)
+async def get_student_exam_form_status(
+    _: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> ExamFormStatusOut:
+    """Check if examination form registration has been started by University Administration."""
+    return await academic_service.get_exam_form_status(db)
+
+
+@router.post("/exam-form/register", status_code=status.HTTP_201_CREATED)
+async def register_student_exam_form(
+    payload: ExamFormRegisterIn,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Student submits exam registration form for active examination window."""
+    try:
+        return await academic_service.register_exam_form(db, user, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc

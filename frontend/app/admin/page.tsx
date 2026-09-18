@@ -16,10 +16,22 @@ import {
   getAdminTicket,
   respondAdminTicket,
   reassignAdminTicket,
+  importStudentsCsv,
+  createSingleStudent,
+  createSingleFaculty,
+  getExamControlStatus,
+  toggleExamControl,
+  listExamRegistrations,
+  getStudent360Overview,
   type RoutingRuleOut,
   type PendingKbItemOut,
   type AdminTicketOut,
   type AdminTicketDetailOut,
+  type ImportedStudentItem,
+  type StudentCsvImportResult,
+  type ExamControlStatusOut,
+  type ExamRegistrationItemOut,
+  type Student360OverviewOut,
 } from "@/lib/api/admin";
 import type { UserOut } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
@@ -34,7 +46,6 @@ import {
   type PaymentGatewayConfigOut,
 } from "@/lib/api/payments";
 import {
-
   sendEmail,
   sendBroadcastEmail,
   listSentEmails,
@@ -47,7 +58,6 @@ import {
   type SmtpConfigOut,
   type BroadcastEmailResultOut,
 } from "@/lib/api/emails";
-
 
 
 const CATEGORIES = [
@@ -2136,6 +2146,722 @@ function AdminPaymentManagementSection({ accessToken }: { accessToken: string })
   );
 }
 
+
+// ----------------------------------------------------
+// Admin: Student CSV Bulk Import & Manual Account Creation
+// ----------------------------------------------------
+function AdminStudentProvisioningSection({ accessToken }: { accessToken: string }) {
+  const [csvText, setCsvText] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<StudentCsvImportResult | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  // Manual single student form
+  const [showManual, setShowManual] = useState(false);
+  const [mName, setMName] = useState("");
+  const [mEmail, setMEmail] = useState("");
+  const [mEnroll, setMEnroll] = useState("");
+  const [mPhone, setMPhone] = useState("");
+  const [mBranch, setMBranch] = useState("");
+  const [mCourse, setMCourse] = useState("B.Tech");
+  const [mSem, setMSem] = useState("Sem 1");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createResult, setCreateResult] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const SAMPLE_CSV = `name,email,enrollment_number,phone_number,branch,course,sem
+Meet Kadiya,meetkadiyaa@gmail.com,2304050400024,8200518250,CSE,B.Tech,Sem 6
+Riya Patel,riya.patel@university.edu,2304050400025,9876543210,ECE,B.Tech,Sem 4`;
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setCsvText(ev.target?.result as string || "");
+    reader.readAsText(file);
+  }
+
+  async function handleImport(e: FormEvent) {
+    e.preventDefault();
+    setImportError(null);
+    setImportResult(null);
+    if (!csvText.trim()) return;
+    setIsImporting(true);
+    try {
+      const result = await importStudentsCsv(accessToken, csvText.trim());
+      setImportResult(result);
+    } catch (err) {
+      setImportError(err instanceof ApiError ? String(err.detail) : "CSV import failed. Check the format and try again.");
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
+  async function handleCreateStudent(e: FormEvent) {
+    e.preventDefault();
+    setCreateError(null);
+    setCreateResult(null);
+    setIsCreating(true);
+    try {
+      const user = await createSingleStudent(accessToken, {
+        name: mName, email: mEmail, enrollment_number: mEnroll,
+        phone_number: mPhone, branch: mBranch, course: mCourse, semester: mSem,
+      });
+      setCreateResult(`✅ Account created: ${user.email} (${mEnroll}). Credentials dispatched to email & SMS.`);
+      setMName(""); setMEmail(""); setMEnroll(""); setMPhone(""); setMBranch("");
+    } catch (err) {
+      setCreateError(err instanceof ApiError ? String(err.detail) : "Failed to create student account.");
+    } finally {
+      setIsCreating(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <span>📋</span> Student Account Provisioning
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Bulk-import students from CSV or create individual accounts. Credentials (email + SMS) are dispatched automatically.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowManual(!showManual)}
+          className="rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 text-xs font-bold text-indigo-700 transition-colors cursor-pointer"
+        >
+          {showManual ? "✕ Close Manual Form" : "➕ Add Single Student"}
+        </button>
+      </div>
+
+      {/* Manual Single Student Form */}
+      {showManual && (
+        <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5 space-y-4">
+          <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Manual Student Account Creation</h3>
+          {createResult && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">{createResult}</div>
+          )}
+          {createError && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">⚠️ {createError}</div>
+          )}
+          <form onSubmit={handleCreateStudent} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: "Full Name", val: mName, set: setMName, placeholder: "e.g. Meet Kadiya", req: true },
+              { label: "Email Address", val: mEmail, set: setMEmail, placeholder: "student@university.edu", req: true },
+              { label: "Enrollment Number", val: mEnroll, set: setMEnroll, placeholder: "e.g. 2304050400024", req: true },
+              { label: "Phone Number", val: mPhone, set: setMPhone, placeholder: "e.g. 8200518250", req: true },
+              { label: "Branch / Department", val: mBranch, set: setMBranch, placeholder: "e.g. CSE", req: true },
+            ].map(({ label, val, set, placeholder, req }) => (
+              <div key={label}>
+                <label className="block text-xs font-bold text-slate-700 mb-1">{label}</label>
+                <input
+                  type="text"
+                  required={req}
+                  value={val}
+                  onChange={(e) => set(e.target.value)}
+                  placeholder={placeholder}
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Course</label>
+                <select value={mCourse} onChange={(e) => setMCourse(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600">
+                  {["B.Tech", "M.Tech", "BCA", "MCA", "MBA", "B.Sc", "M.Sc"].map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Semester</label>
+                <select value={mSem} onChange={(e) => setMSem(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600">
+                  {["Sem 1","Sem 2","Sem 3","Sem 4","Sem 5","Sem 6","Sem 7","Sem 8"].map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="sm:col-span-2 flex justify-end">
+              <button type="submit" disabled={isCreating}
+                className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer">
+                {isCreating ? "Creating Account…" : "✅ Create & Dispatch Credentials"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* CSV Import Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">📂 Bulk CSV Import</h3>
+          <button
+            type="button"
+            onClick={() => {
+              const blob = new Blob([SAMPLE_CSV], { type: "text/csv" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "student_import_template.csv";
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            ⬇️ Download Sample Template
+          </button>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-1">
+          <p className="text-[11px] font-bold text-slate-700">Required CSV Columns:</p>
+          <code className="text-[11px] font-mono text-indigo-700">name, email, enrollment_number, phone_number, branch, course, sem</code>
+          <p className="text-[11px] text-slate-500">Email, enrollment_number, and phone_number must be unique. Duplicate rows will be skipped with error details.</p>
+        </div>
+
+        <form onSubmit={handleImport} className="space-y-3">
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-2">Upload CSV File</label>
+            <input type="file" accept=".csv,text/csv" onChange={handleFileUpload}
+              className="block text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-2">Or Paste CSV Content</label>
+            <textarea
+              rows={6}
+              value={csvText}
+              onChange={(e) => setCsvText(e.target.value)}
+              placeholder={SAMPLE_CSV}
+              className="w-full rounded-xl border border-slate-300 bg-white py-2.5 px-3 text-xs font-mono text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+            />
+          </div>
+          {importError && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">⚠️ {importError}</div>
+          )}
+          <div className="flex justify-end">
+            <button type="submit" disabled={isImporting || !csvText.trim()}
+              className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-6 py-2.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer">
+              {isImporting ? "Importing…" : "📤 Import Students & Send Credentials"}
+            </button>
+          </div>
+        </form>
+
+        {/* Import Results */}
+        {importResult && (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-black text-emerald-900">✅ Import Complete</span>
+              <div className="flex gap-2">
+                <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px] px-2.5 py-0.5">{importResult.created_count} Created</span>
+                <span className="rounded-full bg-amber-100 text-amber-800 font-bold text-[11px] px-2.5 py-0.5">{importResult.skipped_count} Skipped</span>
+                <span className="rounded-full bg-slate-100 text-slate-700 font-bold text-[11px] px-2.5 py-0.5">{importResult.total_rows} Total Rows</span>
+              </div>
+            </div>
+            {importResult.errors.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-rose-800">Errors / Skipped Rows:</p>
+                {importResult.errors.map((e, i) => (
+                  <p key={i} className="text-[11px] text-rose-700 font-mono">{e}</p>
+                ))}
+              </div>
+            )}
+            {importResult.created_students.length > 0 && (
+              <div className="overflow-x-auto rounded-xl border border-emerald-200">
+                <table className="w-full text-xs min-w-[600px]">
+                  <thead className="bg-emerald-100 text-emerald-900 font-bold text-[11px]">
+                    <tr>
+                      <th className="py-2 px-3 text-left">Name</th>
+                      <th className="py-2 px-3 text-left">Email</th>
+                      <th className="py-2 px-3 text-left">Enrollment</th>
+                      <th className="py-2 px-3 text-left">Temp Password</th>
+                      <th className="py-2 px-3 text-center">Email Sent</th>
+                      <th className="py-2 px-3 text-center">SMS Sent</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-emerald-100">
+                    {importResult.created_students.map((s, i) => (
+                      <tr key={i} className="hover:bg-emerald-50">
+                        <td className="py-2 px-3 font-semibold text-slate-900">{s.name}</td>
+                        <td className="py-2 px-3 font-mono text-slate-700">{s.email}</td>
+                        <td className="py-2 px-3 font-mono font-bold text-indigo-700">{s.enrollment_number}</td>
+                        <td className="py-2 px-3 font-mono text-slate-600">{s.temp_password}</td>
+                        <td className="py-2 px-3 text-center">{s.email_dispatched ? "✅" : "❌"}</td>
+                        <td className="py-2 px-3 text-center">{s.sms_dispatched ? "✅" : "❌"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------
+// Admin: Examination Form Controller (Start / Stop)
+// ----------------------------------------------------
+function AdminExamFormControllerSection({ accessToken }: { accessToken: string }) {
+  const [status, setStatus] = useState<ExamControlStatusOut | null>(null);
+  const [registrations, setRegistrations] = useState<ExamRegistrationItemOut[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isToggling, setIsToggling] = useState(false);
+  const [toggleFeedback, setToggleFeedback] = useState<string | null>(null);
+  const [sessionName, setSessionName] = useState("");
+  const [announcement, setAnnouncement] = useState("");
+  const [showRegistrations, setShowRegistrations] = useState(false);
+
+  async function reload() {
+    try {
+      const s = await getExamControlStatus(accessToken);
+      setStatus(s);
+      setSessionName(s.session_name);
+      setAnnouncement(s.announcement || "");
+    } catch { /* ignore */ }
+    try {
+      const r = await listExamRegistrations(accessToken);
+      setRegistrations(r);
+    } catch { /* ignore */ }
+    setIsLoading(false);
+  }
+
+  useEffect(() => { reload(); }, [accessToken]);
+
+  async function handleToggle(newState: boolean) {
+    setIsToggling(true);
+    setToggleFeedback(null);
+    try {
+      const updated = await toggleExamControl(accessToken, {
+        is_active: newState,
+        session_name: sessionName || undefined,
+        announcement: announcement || undefined,
+      });
+      setStatus(updated);
+      setToggleFeedback(newState
+        ? `✅ Exam form OPENED for "${updated.session_name}"`
+        : `🔒 Exam form CLOSED. ${updated.total_registrations} registrations recorded.`
+      );
+      setTimeout(() => setToggleFeedback(null), 5000);
+    } catch (err) {
+      setToggleFeedback(err instanceof ApiError ? `❌ ${err.detail}` : "❌ Toggle failed.");
+    } finally {
+      setIsToggling(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+            <span>📝</span> Examination Form Controller
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Start or stop the exam registration window. Only Admin can activate/deactivate exam forms.
+          </p>
+        </div>
+        <button type="button" onClick={reload} className="rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+          ↻ Refresh
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="py-6 text-center text-xs text-slate-400 animate-pulse">Loading exam control status…</div>
+      ) : status ? (
+        <div className="space-y-5">
+          {/* Live Status Banner */}
+          <div className={`rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 ${
+            status.is_active
+              ? "border border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50"
+              : "border border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50"
+          }`}>
+            <div className="flex items-center gap-4">
+              <div className={`flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${
+                status.is_active ? "bg-emerald-100" : "bg-rose-100"
+              }`}>
+                {status.is_active ? "🟢" : "🔴"}
+              </div>
+              <div>
+                <p className={`text-sm font-black ${status.is_active ? "text-emerald-900" : "text-rose-900"}`}>
+                  {status.is_active ? "Exam Form ACTIVE" : "Exam Form CLOSED"}
+                </p>
+                <p className="text-xs text-slate-600 font-semibold mt-0.5">{status.session_name}</p>
+                <div className="flex gap-3 mt-1 text-[11px] text-slate-500">
+                  <span>Fee: ₹{status.fee_amount}</span>
+                  <span>•</span>
+                  <span>{status.total_registrations} registrations</span>
+                  <span>•</span>
+                  <span>Updated {new Date(status.updated_at).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              {status.is_active ? (
+                <button
+                  type="button"
+                  onClick={() => handleToggle(false)}
+                  disabled={isToggling}
+                  className="rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-sm px-6 py-3 shadow-md transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                >
+                  🔒 STOP Exam Form
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleToggle(true)}
+                  disabled={isToggling}
+                  className="rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm px-6 py-3 shadow-md transition-all disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                >
+                  🚀 START Exam Form
+                </button>
+              )}
+            </div>
+          </div>
+
+          {toggleFeedback && (
+            <div className={`rounded-xl p-3 text-xs font-bold ${
+              toggleFeedback.startsWith("✅") ? "border border-emerald-200 bg-emerald-50 text-emerald-800" : "border border-rose-200 bg-rose-50 text-rose-800"
+            }`}>
+              {toggleFeedback}
+            </div>
+          )}
+
+          {/* Session Configuration */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">⚙️ Session Configuration</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Session Name</label>
+                <input
+                  type="text"
+                  value={sessionName}
+                  onChange={(e) => setSessionName(e.target.value)}
+                  placeholder="e.g. End Semester Exam — Winter 2026"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Announcement (optional)</label>
+                <input
+                  type="text"
+                  value={announcement}
+                  onChange={(e) => setAnnouncement(e.target.value)}
+                  placeholder="Important notice to students…"
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Registrations Table */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowRegistrations(!showRegistrations)}
+              className="flex items-center gap-2 text-xs font-bold text-indigo-700 hover:underline cursor-pointer"
+            >
+              {showRegistrations ? "▲ Hide" : "▼ Show"} Exam Registrations ({registrations.length})
+            </button>
+            {showRegistrations && registrations.length > 0 && (
+              <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-xs min-w-[700px]">
+                  <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                    <tr>
+                      <th className="py-2.5 px-3 text-left">Student</th>
+                      <th className="py-2.5 px-3 text-left">Enrollment</th>
+                      <th className="py-2.5 px-3 text-left">Branch</th>
+                      <th className="py-2.5 px-3 text-left">Sem</th>
+                      <th className="py-2.5 px-3 text-left">Submitted</th>
+                      <th className="py-2.5 px-3 text-left">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {registrations.map((r) => (
+                      <tr key={r.id} className="hover:bg-slate-50/70">
+                        <td className="py-2 px-3">
+                          <p className="font-semibold text-slate-900">{r.student_name}</p>
+                          <p className="text-[10px] text-slate-500">{r.student_email}</p>
+                        </td>
+                        <td className="py-2 px-3 font-mono font-bold text-indigo-700 text-[11px]">{r.enrollment_number}</td>
+                        <td className="py-2 px-3 font-semibold text-slate-700">{r.branch}</td>
+                        <td className="py-2 px-3 text-slate-600">{r.semester}</td>
+                        <td className="py-2 px-3 text-[11px] text-slate-500">{new Date(r.submitted_at).toLocaleString()}</td>
+                        <td className="py-2 px-3">
+                          <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] px-2.5 py-0.5">{r.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {showRegistrations && registrations.length === 0 && (
+              <p className="mt-3 text-xs text-slate-500 italic">No exam registrations received yet.</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-slate-500">Failed to load exam control status.</p>
+      )}
+    </div>
+  );
+}
+
+// ----------------------------------------------------
+// Admin: Student 360° Comprehensive Inspection
+// ----------------------------------------------------
+function AdminStudent360Section({ accessToken }: { accessToken: string }) {
+  const [identifier, setIdentifier] = useState("");
+  const [result, setResult] = useState<Student360OverviewOut | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"marks" | "fees" | "assignments" | "exam">("marks");
+
+  async function handleSearch(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setResult(null);
+    const id = identifier.trim();
+    if (!id) return;
+    setIsLoading(true);
+    try {
+      const data = await getStudent360Overview(accessToken, id);
+      setResult(data);
+    } catch (err) {
+      setError(err instanceof ApiError ? String(err.detail) : "Student not found.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-sm space-y-5">
+      <div className="pb-4 border-b border-slate-100">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+          <span>🔭</span> Student 360° Inspection
+        </h2>
+        <p className="text-xs text-slate-500 mt-0.5">
+          View any student&apos;s complete academic record: fees, marks, results, assignments, and exam status.
+        </p>
+      </div>
+
+      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1 relative">
+          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">🔍</span>
+          <input
+            type="text"
+            value={identifier}
+            onChange={(e) => { setIdentifier(e.target.value); setError(null); }}
+            placeholder="Enter Enrollment Number or Email Address"
+            className="w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-4 text-sm font-semibold text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={isLoading || !identifier.trim()}
+          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+        >
+          {isLoading ? "Loading…" : "🔭 Inspect Student"}
+        </button>
+      </form>
+
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">⚠️ {error}</div>
+      )}
+
+      {result && (
+        <div className="space-y-4">
+          {/* Identity card */}
+          <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100/50 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-200 text-slate-900 font-black text-2xl">
+                {result.student.name?.charAt(0) || (result.student.email?.charAt(0).toUpperCase()) || "S"}
+              </div>
+              <div>
+                <p className="text-sm font-black text-slate-900">{result.student.name || result.student.email}</p>
+                <p className="text-xs text-slate-600">{result.student.email}</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {(result.student as any).enrollment_number && (
+                    <span className="font-mono text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md px-2 py-0.5">
+                      {(result.student as any).enrollment_number}
+                    </span>
+                  )}
+                  {(result.student as any).branch && (
+                    <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-md px-2 py-0.5">
+                      {(result.student as any).branch}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-3 text-center text-xs">
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase">SPI</p>
+                <p className="text-lg font-black text-indigo-700">{result.spi?.toFixed(2) ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase">CPI</p>
+                <p className="text-lg font-black text-purple-700">{result.cpi?.toFixed(2) ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Attendance</p>
+                <p className={`text-lg font-black ${(result.attendance.percentage >= 75) ? "text-emerald-700" : "text-rose-700"}`}>
+                  {result.attendance.percentage.toFixed(1)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Fees</p>
+                <p className={`text-sm font-black ${result.fees_summary.balance_pending > 0 ? "text-rose-700" : "text-emerald-700"}`}>
+                  {result.fees_summary.balance_pending > 0 ? "Due" : "Clear"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Detail Tabs */}
+          <div className="flex gap-1 p-1 bg-slate-100 rounded-xl text-xs font-bold">
+            {(["marks", "fees", "assignments", "exam"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setActiveTab(t)}
+                className={`flex-1 py-2 rounded-lg capitalize transition-all cursor-pointer ${activeTab === t ? "bg-white text-indigo-700 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+              >
+                {t === "marks" ? "📊 Marks" : t === "fees" ? "💳 Fees" : t === "assignments" ? "📝 Assignments" : "📋 Exam"}
+              </button>
+            ))}
+          </div>
+
+          {/* Marks tab */}
+          {activeTab === "marks" && (
+            result.marks.length > 0 ? (
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-xs min-w-[550px]">
+                  <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                    <tr>
+                      <th className="py-2.5 px-3 text-left">Subject</th>
+                      <th className="py-2.5 px-3">Internal</th>
+                      <th className="py-2.5 px-3">Midterm</th>
+                      <th className="py-2.5 px-3">Final</th>
+                      <th className="py-2.5 px-3">Total</th>
+                      <th className="py-2.5 px-3">Grade</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {result.marks.map((m) => (
+                      <tr key={m.id} className="hover:bg-slate-50/70">
+                        <td className="py-2 px-3">
+                          <p className="font-bold text-slate-900">{m.subject_name}</p>
+                          <p className="text-[10px] font-mono text-slate-500">{m.subject_code}</p>
+                        </td>
+                        <td className="py-2 px-3 text-center">{m.internal_marks}</td>
+                        <td className="py-2 px-3 text-center">{m.midterm_marks}</td>
+                        <td className="py-2 px-3 text-center">{m.final_marks}</td>
+                        <td className="py-2 px-3 text-center font-black">{m.total_marks}</td>
+                        <td className="py-2 px-3 text-center">
+                          <span className="rounded-full px-2 py-0.5 text-[11px] font-black bg-indigo-50 text-indigo-800">{m.grade}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <p className="text-xs text-slate-500 italic py-4">No marks data recorded.</p>
+          )}
+
+          {/* Fees tab */}
+          {activeTab === "fees" && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-center">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase">Total Assessed</p>
+                  <p className="text-lg font-black text-slate-900">₹{result.fees_summary.total_assessed.toLocaleString()}</p>
+                </div>
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-center">
+                  <p className="text-[10px] font-bold text-emerald-700 uppercase">Total Paid</p>
+                  <p className="text-lg font-black text-emerald-800">₹{result.fees_summary.total_paid.toLocaleString()}</p>
+                </div>
+                <div className={`rounded-xl p-3 text-center ${result.fees_summary.balance_pending > 0 ? "bg-rose-50 border border-rose-200" : "bg-slate-50 border border-slate-200"}`}>
+                  <p className={`text-[10px] font-bold uppercase ${result.fees_summary.balance_pending > 0 ? "text-rose-700" : "text-slate-500"}`}>Balance Due</p>
+                  <p className={`text-lg font-black ${result.fees_summary.balance_pending > 0 ? "text-rose-800" : "text-slate-900"}`}>
+                    ₹{result.fees_summary.balance_pending.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+              {result.fees_summary.transactions.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full text-xs min-w-[500px]">
+                    <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                      <tr>
+                        <th className="py-2.5 px-3 text-left">Order ID</th>
+                        <th className="py-2.5 px-3 text-left">Type</th>
+                        <th className="py-2.5 px-3">Amount</th>
+                        <th className="py-2.5 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {result.fees_summary.transactions.map((t) => (
+                        <tr key={t.id} className="hover:bg-slate-50/70">
+                          <td className="py-2 px-3 font-mono text-[11px] text-slate-700">{t.order_id}</td>
+                          <td className="py-2 px-3 uppercase text-[11px] font-semibold">{t.fee_type}</td>
+                          <td className="py-2 px-3 text-center font-black">₹{t.amount.toLocaleString()}</td>
+                          <td className="py-2 px-3 text-center">
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${t.status === "success" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                              {t.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <p className="text-xs text-slate-500 italic">No fee transactions found.</p>}
+            </div>
+          )}
+
+          {/* Assignments tab */}
+          {activeTab === "assignments" && (
+            result.assignments.length > 0 ? (
+              <div className="space-y-2">
+                {result.assignments.map((a, i) => (
+                  <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{a.title}</p>
+                      <p className="text-[11px] font-mono text-slate-500">{a.course_code} — {a.course_name}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {a.score != null && <span className="text-xs font-black text-indigo-700">{a.score}/{a.total_points}</span>}
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${a.status === "graded" ? "bg-emerald-100 text-emerald-800" : a.status === "submitted" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"}`}>
+                        {a.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="text-xs text-slate-500 italic py-4">No assignments found.</p>
+          )}
+
+          {/* Exam tab */}
+          {activeTab === "exam" && (
+            result.exam_registration ? (
+              <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 space-y-2">
+                <p className="text-xs font-bold text-indigo-900">Exam Registration</p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div><p className="text-[10px] font-bold text-indigo-700 uppercase">Session</p><p className="font-semibold">{result.exam_registration.session}</p></div>
+                  <div><p className="text-[10px] font-bold text-indigo-700 uppercase">Status</p><p className="font-semibold">{result.exam_registration.status}</p></div>
+                  <div className="col-span-2"><p className="text-[10px] font-bold text-indigo-700 uppercase">Submitted</p><p className="font-semibold">{new Date(result.exam_registration.submitted_at).toLocaleString()}</p></div>
+                </div>
+              </div>
+            ) : <p className="text-xs text-slate-500 italic py-4">No exam registration submitted.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminDashboardPage() {
   const accessToken = useRequireAdmin();
 
@@ -2185,6 +2911,9 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Admin Sections */}
+      <AdminStudentProvisioningSection accessToken={accessToken} />
+      <AdminExamFormControllerSection accessToken={accessToken} />
+      <AdminStudent360Section accessToken={accessToken} />
       <ClerkAssistantTriageSection accessToken={accessToken} />
       <KnowledgeBaseApprovalsSection accessToken={accessToken} />
       <AdminPaymentManagementSection accessToken={accessToken} />
