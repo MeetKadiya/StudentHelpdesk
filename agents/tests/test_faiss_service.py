@@ -69,7 +69,8 @@ def test_search_returns_results_from_retriever(monkeypatch):
 
 def test_reindex_returns_chunk_count_and_resets_cache(monkeypatch):
     class FakeIndex:
-        metadatas = [{"content": "a"}, {"content": "b"}]
+        def __init__(self):
+            self.metadatas = [{"content": "a"}, {"content": "b"}]
 
         def save(self, index_path, metadata_path):
             pass

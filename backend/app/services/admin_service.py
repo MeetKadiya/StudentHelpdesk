@@ -9,6 +9,7 @@ BACKEND-07). No metric here is invented or approximated with fake data;
 each is a plain aggregate with a stated definition. See AnalyticsSummaryOut
 docstrings in app/schemas/admin.py for exact definitions."""
 
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -23,6 +24,7 @@ from app.db.models.ticket import Ticket
 from app.db.models.user import User
 from app.services.ai_dispatch_service import enqueue_learning_job
 
+logger = logging.getLogger(__name__)
 
 
 class AdminServiceError(Exception):
@@ -372,7 +374,7 @@ async def respond_as_admin(
                 f"Review your ticket anytime at:\nhttp://localhost:8080/tickets/{ticket.id}\n"
             )
             send_email_notification.apply_async(args=[student.email, subj, body], queue="email", retry=False)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to dispatch email for admin ticket reply: %s", exc)
 
     return message

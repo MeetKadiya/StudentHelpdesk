@@ -2,8 +2,8 @@
 
 import uuid
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # --- Assignment Schemas ---
 

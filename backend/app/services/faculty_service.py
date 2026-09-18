@@ -86,7 +86,7 @@ async def respond_to_ticket(
             )
             send_email_notification.apply_async(args=[student.email, subj, body], queue="email", retry=False)
             logger.info("Enqueued student email notification to %s for ticket %s", student.email, ticket.id)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to dispatch student email notification: %s", exc)
 
     return message

@@ -26,7 +26,6 @@ from app.schemas.ticket import MessageOut
 from app.services import admin_service
 from app.services.admin_service import AdminServiceError
 
-
 router = APIRouter()
 
 

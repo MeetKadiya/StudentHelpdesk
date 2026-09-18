@@ -69,7 +69,7 @@ class FaissIndex:
                 f.write(json.dumps(m) + "\n")
 
     @classmethod
-    def load(cls, index_path: Path | str, metadata_path: Path | str, *, dim: int) -> "FaissIndex":
+    def load(cls, index_path: Path | str, metadata_path: Path | str, *, dim: int) -> FaissIndex:
         obj = cls(dim)
         obj.index = obj._faiss.read_index(str(index_path))
         with Path(metadata_path).open(encoding="utf-8") as f:

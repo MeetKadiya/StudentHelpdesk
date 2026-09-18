@@ -106,7 +106,7 @@ async def apply_ai_result(db: AsyncSession, ticket_id: uuid.UUID, payload: AiRes
                     )
                     send_email_notification.apply_async(args=[faculty.email, subj, body], queue="email", retry=False)
                     logger.info("Enqueued faculty notification email to %s for ticket %s", faculty.email, ticket.id)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.warning("Failed to dispatch faculty notification email: %s", exc)
 
     await db.commit()

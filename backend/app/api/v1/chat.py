@@ -2,12 +2,8 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter
 
-from app.api.deps import get_current_user
-from app.db.models.user import User
-from app.db.session import get_db
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.services import chat_service
 

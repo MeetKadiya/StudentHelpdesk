@@ -1,9 +1,9 @@
 """Email service handling direct communication from Faculty and Admin to Students, with live SMTP delivery."""
 
+import contextlib
 import logging
 import os
 import smtplib
-import uuid
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -84,7 +84,7 @@ def _format_smtp_error(exc: Exception) -> str:
     if "535" in err_str or "BadCredentials" in err_str or "Username and Password not accepted" in err_str:
         return "Authentication failed (535 Bad Credentials). For Gmail, generate a 16-character App Password at https://myaccount.google.com/apppasswords"
     if "Connection refused" in err_str:
-        return f"Connection refused by SMTP server. Verify host and port."
+        return "Connection refused by SMTP server. Verify host and port."
     if "timed out" in err_str.lower():
         return "SMTP connection timed out. Verify host network and firewall settings."
     return err_str[:120]
@@ -160,7 +160,7 @@ def _deliver_smtp_message(
                 server.login(user, password)
             server.send_message(msg)
         return True, "Delivered to real mailbox via SMTP"
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         formatted_err = _format_smtp_error(exc)
         logger.warning("SMTP direct delivery failed: %s", formatted_err)
         return False, formatted_err
@@ -271,7 +271,7 @@ Portal Inbox: http://localhost/inbox""",
             args=[recipient_email, f"[{sender.role.upper()} NOTICE] {subject}", body],
             queue="email"
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Celery enqueue fallback warning: %s", exc)
 
     return email_record
@@ -320,7 +320,7 @@ async def send_broadcast_email(
                     smtp_server.starttls()
             if smtp_config.smtp_user and clean_pwd:
                 smtp_server.login(smtp_config.smtp_user, clean_pwd)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             smtp_global_error = _format_smtp_error(exc)
             logger.warning("SMTP session setup failed for broadcast: %s", smtp_global_error)
             smtp_server = None
@@ -349,7 +349,7 @@ Portal Inbox: http://localhost/inbox""",
                 smtp_server.send_message(mime)
                 student_status = "delivered_smtp"
                 delivered_smtp_count += 1
-            except Exception as item_err:
+            except Exception as item_err:  # noqa: BLE001
                 formatted_item_err = _format_smtp_error(item_err)
                 student_status = f"smtp_error: {formatted_item_err}"
                 failed_smtp_count += 1
@@ -373,10 +373,8 @@ Portal Inbox: http://localhost/inbox""",
         email_records.append(record)
 
     if smtp_server is not None:
-        try:
+        with contextlib.suppress(Exception):
             smtp_server.quit()
-        except Exception:
-            pass
 
     # Save all messages in bulk to PostgreSQL so all students see it in /inbox
     db.add_all(email_records)
@@ -384,13 +382,11 @@ Portal Inbox: http://localhost/inbox""",
 
     # Queue background task for Celery logging
     for r in email_records:
-        try:
+        with contextlib.suppress(Exception):
             send_email_notification.apply_async(
                 args=[r.recipient_email, r.subject, r.body],
-                queue="email"
+                queue="email",
             )
-        except Exception:
-            pass
 
     if delivered_smtp_count > 0:
         status_summary = f"Delivered to {delivered_smtp_count} real student mailboxes via SMTP and stored in {len(students)} portal inboxes."

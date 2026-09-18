@@ -13,8 +13,6 @@ reimplement retrieval.
 """
 from __future__ import annotations
 
-from pathlib import Path
-
 from agents.config import AgentSettings
 from agents.embeddings.embedder import Embedder, get_embedder
 from agents.rag.faiss_index import FaissIndex

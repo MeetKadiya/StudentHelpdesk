@@ -1,6 +1,7 @@
 """API Router for Faculty Academic Workflow (Assignments, Attendance, Student Directory)."""
 
 import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,7 +67,6 @@ async def delete_assignment(
     success = await academic_service.delete_assignment(db, assignment_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found.")
-    return None
 
 
 @router.post("/assignments/{assignment_id}/grade", response_model=AssignmentSubmissionOut)

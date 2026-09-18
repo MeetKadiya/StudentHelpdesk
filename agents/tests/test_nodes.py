@@ -41,7 +41,7 @@ def test_parse_confidence_extracts_trailing_float():
 
 
 def test_parse_confidence_fails_closed_when_missing():
-    answer, confidence = _parse_confidence("You can reset it at the IT portal.")
+    _answer, confidence = _parse_confidence("You can reset it at the IT portal.")
     assert confidence == 0.0
 
 

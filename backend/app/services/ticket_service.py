@@ -158,7 +158,7 @@ async def create_ticket(
                 )
                 send_email_notification.apply_async(args=[faculty.email, subj, body], queue="email", retry=False)
                 logger.info("Dispatched faculty notification email to %s for new ticket %s", faculty.email, ticket.id)
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to dispatch faculty notification email: %s", exc)
 
     # Dispatch to AI agent graph asynchronously

@@ -36,6 +36,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+
 @celery_app.task(name="app.workers.send_email_notification", queue="email")
 def send_email_notification(to_email: str, subject: str, body: str) -> dict:
     """Task for asynchronous email delivery via the email worker queue."""
@@ -67,7 +68,7 @@ def send_email_notification(to_email: str, subject: str, body: str) -> dict:
                     server.login(smtp_user, smtp_pass)
                 server.send_message(msg)
             logger.info("Successfully delivered email via SMTP %s to %s", smtp_host, to_email)
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001
             logger.warning("SMTP delivery failed (logged to worker queue instead): %s", err)
 
     return {"status": "sent", "to": to_email, "subject": subject}

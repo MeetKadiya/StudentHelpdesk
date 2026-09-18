@@ -4,11 +4,12 @@ import hashlib
 import logging
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select, func
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.payment import PaymentGatewayConfig, PaymentTransaction
 from app.db.models.email_message import EmailMessage
+from app.db.models.payment import PaymentGatewayConfig, PaymentTransaction
 from app.db.models.user import User
 from app.schemas.payment import (
     PaymentGatewayConfigIn,
@@ -16,7 +17,6 @@ from app.schemas.payment import (
     PaymentOrderCreateIn,
     PaymentOrderOut,
     PaymentSummaryStatsOut,
-    PaymentTransactionOut,
     PaymentVerifyIn,
 )
 

@@ -4,7 +4,8 @@ import logging
 import re
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select, func, delete
+
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,7 +17,6 @@ from app.schemas.academic import (
     AssignmentDetailOut,
     AssignmentOut,
     AssignmentSubmissionOut,
-    AttendanceRecordIn,
     AttendanceRecordOut,
     AttendanceSessionCreateIn,
     AttendanceSessionOut,
