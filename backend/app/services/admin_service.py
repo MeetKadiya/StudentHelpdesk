@@ -35,6 +35,8 @@ from app.db.models.exam import ExamControlSetting, ExamRegistration
 from app.db.models.payment import PaymentTransaction
 from app.db.models.student_record import StudentMark
 from app.schemas.admin import (
+    ClerkCreateIn,
+    AdminCreateIn,
     ExamControlStatusOut,
     ExamControlToggleIn,
     FacultyCreateIn,
@@ -701,6 +703,56 @@ async def create_single_faculty(
     await db.commit()
     await db.refresh(user)
     return user
+
+
+async def create_single_clerk(
+    db: AsyncSession, admin_id: uuid.UUID, data: ClerkCreateIn
+) -> User:
+    clean_email = data.email.strip().lower()
+    if await db.scalar(select(User).where(User.email == clean_email)):
+        raise AdminServiceError(f"Email '{clean_email}' already registered.")
+
+    raw_password = (
+        data.password.strip() if data.password and data.password.strip() else "Clerk@2026!Desk"
+    )
+    user = User(
+        email=clean_email,
+        password_hash=hash_password(raw_password),
+        role="clerk",
+        name=data.name.strip(),
+        phone_number=data.phone_number.strip() if data.phone_number else None,
+        branch=data.department.strip(),
+    )
+    db.add(user)
+    await _audit(db, admin_id, "clerk_created", f"user_id={user.id} department={data.department}")
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
+async def create_single_admin(
+    db: AsyncSession, admin_id: uuid.UUID, data: AdminCreateIn
+) -> User:
+    clean_email = data.email.strip().lower()
+    if await db.scalar(select(User).where(User.email == clean_email)):
+        raise AdminServiceError(f"Email '{clean_email}' already registered.")
+
+    raw_password = (
+        data.password.strip() if data.password and data.password.strip() else "Admin@2026!Sec"
+    )
+    user = User(
+        email=clean_email,
+        password_hash=hash_password(raw_password),
+        role="admin",
+        name=data.name.strip(),
+        phone_number=data.phone_number.strip() if data.phone_number else None,
+    )
+    db.add(user)
+    await _audit(db, admin_id, "admin_created", f"user_id={user.id} email={clean_email}")
+    await db.commit()
+    await db.refresh(user)
+    return user
+
 
 
 # ============================================================================

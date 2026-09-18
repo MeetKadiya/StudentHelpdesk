@@ -70,6 +70,22 @@ async def lifespan(app: FastAPI):
                         "ON CONFLICT (id) DO NOTHING;"
                     )
                 )
+                # Seed initial bootstrap admin account if none exists
+                from app.core.security import hash_password
+                import uuid
+                check_admin = await conn.execute(text("SELECT id FROM users WHERE role = 'admin' LIMIT 1;"))
+                if check_admin.fetchone() is None:
+                    admin_id = str(uuid.uuid4())
+                    temp_admin_hash = hash_password("Admin@Campus2026")
+                    await conn.execute(
+                        text(
+                            "INSERT INTO users (id, email, hashed_password, role, name, is_active, created_at, updated_at) "
+                            "VALUES (:id, 'admin@university.edu', :pwd, 'admin', 'Central University Administrator', true, NOW(), NOW()) "
+                            "ON CONFLICT (email) DO NOTHING;"
+                        ),
+                        {"id": admin_id, "pwd": temp_admin_hash},
+                    )
+                    logger.info("Initialized default bootstrap admin: admin@university.edu")
     except Exception as exc:  # noqa: BLE001
         logger.warning("Database schema auto-creation notice: %s", exc)
     yield

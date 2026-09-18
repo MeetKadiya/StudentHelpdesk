@@ -269,6 +269,44 @@ export function createSingleFaculty(
   });
 }
 
+export interface ClerkCreateIn {
+  name: string;
+  email: string;
+  department?: string;
+  phone_number?: string;
+  password?: string;
+}
+
+export interface AdminCreateIn {
+  name: string;
+  email: string;
+  phone_number?: string;
+  password?: string;
+}
+
+export function createSingleClerk(
+  accessToken: string,
+  payload: ClerkCreateIn
+): Promise<UserOut> {
+  return apiFetch<UserOut>("/admin/users/create-clerk", {
+    method: "POST",
+    body: payload,
+    accessToken,
+  });
+}
+
+export function createSingleAdmin(
+  accessToken: string,
+  payload: AdminCreateIn
+): Promise<UserOut> {
+  return apiFetch<UserOut>("/admin/users/create-admin", {
+    method: "POST",
+    body: payload,
+    accessToken,
+  });
+}
+
+
 // ---------------------------------------------------------------------------
 // Exam Form Controller
 // ---------------------------------------------------------------------------

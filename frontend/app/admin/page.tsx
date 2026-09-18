@@ -19,6 +19,8 @@ import {
   importStudentsCsv,
   createSingleStudent,
   createSingleFaculty,
+  createSingleClerk,
+  createSingleAdmin,
   getExamControlStatus,
   toggleExamControl,
   listExamRegistrations,
@@ -2156,8 +2158,9 @@ function AdminStudentProvisioningSection({ accessToken }: { accessToken: string 
   const [importResult, setImportResult] = useState<StudentCsvImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
 
-  // Manual single student form
+  // Manual account provisioning form
   const [showManual, setShowManual] = useState(false);
+  const [provisionRole, setProvisionRole] = useState<"student" | "clerk" | "faculty" | "admin">("student");
   const [mName, setMName] = useState("");
   const [mEmail, setMEmail] = useState("");
   const [mEnroll, setMEnroll] = useState("");
@@ -2165,6 +2168,7 @@ function AdminStudentProvisioningSection({ accessToken }: { accessToken: string 
   const [mBranch, setMBranch] = useState("");
   const [mCourse, setMCourse] = useState("B.Tech");
   const [mSem, setMSem] = useState("Sem 1");
+  const [mPassword, setMPassword] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createResult, setCreateResult] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -2197,20 +2201,41 @@ Riya Patel,riya.patel@university.edu,2304050400025,9876543210,ECE,B.Tech,Sem 4`;
     }
   }
 
-  async function handleCreateStudent(e: FormEvent) {
+  async function handleCreateAccount(e: FormEvent) {
     e.preventDefault();
     setCreateError(null);
     setCreateResult(null);
     setIsCreating(true);
     try {
-      const user = await createSingleStudent(accessToken, {
-        name: mName, email: mEmail, enrollment_number: mEnroll,
-        phone_number: mPhone, branch: mBranch, course: mCourse, semester: mSem,
-      });
-      setCreateResult(`✅ Account created: ${user.email} (${mEnroll}). Credentials dispatched to email & SMS.`);
-      setMName(""); setMEmail(""); setMEnroll(""); setMPhone(""); setMBranch("");
+      if (provisionRole === "student") {
+        const user = await createSingleStudent(accessToken, {
+          name: mName, email: mEmail, enrollment_number: mEnroll,
+          phone_number: mPhone, branch: mBranch, course: mCourse, semester: mSem,
+          password: mPassword.trim() || undefined,
+        });
+        setCreateResult(`✅ Student account created: ${user.email} (${mEnroll}). Credentials dispatched to email & SMS.`);
+      } else if (provisionRole === "clerk") {
+        const user = await createSingleClerk(accessToken, {
+          name: mName, email: mEmail, department: mBranch || "Student Helpdesk",
+          phone_number: mPhone || undefined, password: mPassword.trim() || undefined,
+        });
+        setCreateResult(`✅ Clerk Assistant account created: ${user.email}.`);
+      } else if (provisionRole === "faculty") {
+        const user = await createSingleFaculty(accessToken, {
+          name: mName, email: mEmail, department: mBranch || "General",
+          phone_number: mPhone || undefined, password: mPassword.trim() || undefined,
+        });
+        setCreateResult(`✅ Faculty account created: ${user.email}.`);
+      } else if (provisionRole === "admin") {
+        const user = await createSingleAdmin(accessToken, {
+          name: mName, email: mEmail, phone_number: mPhone || undefined,
+          password: mPassword.trim() || undefined,
+        });
+        setCreateResult(`✅ New Administrator account created: ${user.email}.`);
+      }
+      setMName(""); setMEmail(""); setMEnroll(""); setMPhone(""); setMBranch(""); setMPassword("");
     } catch (err) {
-      setCreateError(err instanceof ApiError ? String(err.detail) : "Failed to create student account.");
+      setCreateError(err instanceof ApiError ? String(err.detail) : "Failed to create account.");
     } finally {
       setIsCreating(false);
     }
@@ -2221,10 +2246,10 @@ Riya Patel,riya.patel@university.edu,2304050400025,9876543210,ECE,B.Tech,Sem 4`;
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100">
         <div>
           <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>📋</span> Student Account Provisioning
+            <span>📋</span> Institutional Account Provisioning
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Bulk-import students from CSV or create individual accounts. Credentials (email + SMS) are dispatched automatically.
+            Bulk-import students from CSV or provision individual accounts for Students, Clerks, Faculty, and Administrators.
           </p>
         </div>
         <button
@@ -2232,60 +2257,130 @@ Riya Patel,riya.patel@university.edu,2304050400025,9876543210,ECE,B.Tech,Sem 4`;
           onClick={() => setShowManual(!showManual)}
           className="rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 text-xs font-bold text-indigo-700 transition-colors cursor-pointer"
         >
-          {showManual ? "✕ Close Manual Form" : "➕ Add Single Student"}
+          {showManual ? "✕ Close Manual Form" : "➕ Add Individual Account"}
         </button>
       </div>
 
-      {/* Manual Single Student Form */}
+      {/* Manual Account Provisioning Form */}
       {showManual && (
         <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-5 space-y-4">
-          <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Manual Student Account Creation</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-indigo-900 uppercase tracking-wider">Manual Account Provisioning</h3>
+            <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-indigo-200 text-xs font-bold">
+              {(["student", "clerk", "faculty", "admin"] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => { setProvisionRole(r); setCreateError(null); setCreateResult(null); }}
+                  className={`px-3 py-1 rounded-lg capitalize transition-colors cursor-pointer ${
+                    provisionRole === r ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {r === "student" ? "🎓 Student" : r === "clerk" ? "📋 Clerk" : r === "faculty" ? "👨‍🏫 Faculty" : "🏛️ Admin"}
+                </button>
+              ))}
+            </div>
+          </div>
           {createResult && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-800">{createResult}</div>
           )}
           {createError && (
             <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-800">⚠️ {createError}</div>
           )}
-          <form onSubmit={handleCreateStudent} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[
-              { label: "Full Name", val: mName, set: setMName, placeholder: "e.g. Meet Kadiya", req: true },
-              { label: "Email Address", val: mEmail, set: setMEmail, placeholder: "student@university.edu", req: true },
-              { label: "Enrollment Number", val: mEnroll, set: setMEnroll, placeholder: "e.g. 2304050400024", req: true },
-              { label: "Phone Number", val: mPhone, set: setMPhone, placeholder: "e.g. 8200518250", req: true },
-              { label: "Branch / Department", val: mBranch, set: setMBranch, placeholder: "e.g. CSE", req: true },
-            ].map(({ label, val, set, placeholder, req }) => (
-              <div key={label}>
-                <label className="block text-xs font-bold text-slate-700 mb-1">{label}</label>
+          <form onSubmit={handleCreateAccount} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+              <input
+                type="text"
+                required
+                value={mName}
+                onChange={(e) => setMName(e.target.value)}
+                placeholder="e.g. Full Name"
+                className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+              <input
+                type="email"
+                required
+                value={mEmail}
+                onChange={(e) => setMEmail(e.target.value)}
+                placeholder="user@university.edu"
+                className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+            {provisionRole === "student" && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Enrollment Number</label>
                 <input
                   type="text"
-                  required={req}
-                  value={val}
-                  onChange={(e) => set(e.target.value)}
-                  placeholder={placeholder}
+                  required
+                  value={mEnroll}
+                  onChange={(e) => setMEnroll(e.target.value)}
+                  placeholder="e.g. 2304050400024"
                   className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
                 />
               </div>
-            ))}
-            <div className="grid grid-cols-2 gap-3 sm:col-span-2">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Course</label>
-                <select value={mCourse} onChange={(e) => setMCourse(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600">
-                  {["B.Tech", "M.Tech", "BCA", "MCA", "MBA", "B.Sc", "M.Sc"].map((c) => <option key={c}>{c}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Semester</label>
-                <select value={mSem} onChange={(e) => setMSem(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600">
-                  {["Sem 1","Sem 2","Sem 3","Sem 4","Sem 5","Sem 6","Sem 7","Sem 8"].map((s) => <option key={s}>{s}</option>)}
-                </select>
-              </div>
+            )}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number {provisionRole !== "student" && "(Optional)"}</label>
+              <input
+                type="text"
+                required={provisionRole === "student"}
+                value={mPhone}
+                onChange={(e) => setMPhone(e.target.value)}
+                placeholder="e.g. 9876543210"
+                className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
             </div>
+            {provisionRole !== "admin" && (
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {provisionRole === "student" ? "Branch / Department" : "Department / Office"}
+                </label>
+                <input
+                  type="text"
+                  required={provisionRole === "student"}
+                  value={mBranch}
+                  onChange={(e) => setMBranch(e.target.value)}
+                  placeholder={provisionRole === "clerk" ? "Student Helpdesk" : "e.g. Computer Engineering"}
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Custom Password (Optional)</label>
+              <input
+                type="password"
+                value={mPassword}
+                onChange={(e) => setMPassword(e.target.value)}
+                placeholder="Leave blank for auto-generated password"
+                className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600"
+              />
+            </div>
+            {provisionRole === "student" && (
+              <div className="grid grid-cols-2 gap-3 sm:col-span-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Course</label>
+                  <select value={mCourse} onChange={(e) => setMCourse(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600">
+                    {["B.Tech", "M.Tech", "BCA", "MCA", "MBA", "B.Sc", "M.Sc"].map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Semester</label>
+                  <select value={mSem} onChange={(e) => setMSem(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white py-2 px-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-600">
+                    {["Sem 1","Sem 2","Sem 3","Sem 4","Sem 5","Sem 6","Sem 7","Sem 8"].map((s) => <option key={s}>{s}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
             <div className="sm:col-span-2 flex justify-end">
               <button type="submit" disabled={isCreating}
                 className="rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-6 py-2.5 shadow-sm transition-all disabled:opacity-50 cursor-pointer">
-                {isCreating ? "Creating Account…" : "✅ Create & Dispatch Credentials"}
+                {isCreating ? "Creating Account…" : `✅ Create ${provisionRole.toUpperCase()} Account`}
               </button>
             </div>
           </form>

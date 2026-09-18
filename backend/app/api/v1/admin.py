@@ -16,6 +16,8 @@ from app.schemas.admin import (
     AdminTicketReassign,
     AdminTicketRespond,
     AnalyticsSummaryOut,
+    ClerkCreateIn,
+    AdminCreateIn,
     ExamControlStatusOut,
     ExamControlToggleIn,
     ExamRegistrationItemOut,
@@ -260,6 +262,35 @@ async def create_faculty_account(
         return UserOut.model_validate(user)
     except AdminServiceError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/users/create-clerk", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def create_clerk_account(
+    payload: ClerkCreateIn,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Administrator manually creates a verified clerk assistant account."""
+    try:
+        user = await admin_service.create_single_clerk(db, admin.id, payload)
+        return UserOut.model_validate(user)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post("/users/create-admin", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+async def create_admin_account(
+    payload: AdminCreateIn,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> UserOut:
+    """Administrator creates another Administrator account."""
+    try:
+        user = await admin_service.create_single_admin(db, admin.id, payload)
+        return UserOut.model_validate(user)
+    except AdminServiceError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
 
 
 @router.get("/exam-form/status", response_model=ExamControlStatusOut)

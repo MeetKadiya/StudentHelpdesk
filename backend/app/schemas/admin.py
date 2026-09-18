@@ -129,6 +129,22 @@ class FacultyCreateIn(BaseModel):
     password: str | None = None
 
 
+class ClerkCreateIn(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    email: EmailStr
+    department: str = Field(default="Student Helpdesk", max_length=100)
+    phone_number: str | None = None
+    password: str | None = None
+
+
+class AdminCreateIn(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    email: EmailStr
+    phone_number: str | None = None
+    password: str | None = None
+
+
+
 class ImportedStudentItem(BaseModel):
     name: str
     email: str

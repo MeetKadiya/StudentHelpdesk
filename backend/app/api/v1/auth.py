@@ -54,11 +54,10 @@ async def get_me(user: User = Depends(get_current_user)) -> UserOut:
 
 @router.post("/signup", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 async def signup(payload: SignupRequest, db: AsyncSession = Depends(get_db)) -> UserOut:
-    if payload.role.lower().strip() in ("student", "faculty"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Student and faculty accounts can only be provisioned by university administration. Please check your official email for credentials or contact Admin.",
-        )
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Public account registration is disabled. All student, faculty, and clerk accounts are provisioned exclusively by Central University Administration.",
+    )
     try:
         user = await auth_service.signup(db, payload.email, payload.password, payload.role)
     except AuthError as exc:
