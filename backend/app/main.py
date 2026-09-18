@@ -81,8 +81,8 @@ async def lifespan(app: FastAPI):
                     temp_admin_hash = hash_password("Admin@Campus2026")
                     await conn.execute(
                         text(
-                            "INSERT INTO users (id, email, hashed_password, role, name, is_active, created_at, updated_at) "
-                            "VALUES (:id, 'admin@university.edu', :pwd, 'admin', 'Central University Administrator', true, NOW(), NOW()) "
+                            "INSERT INTO users (id, email, password_hash, role, name, created_at) "
+                            "VALUES (:id, 'admin@university.edu', :pwd, 'admin', 'Central University Administrator', NOW()) "
                             "ON CONFLICT (email) DO NOTHING;"
                         ),
                         {"id": admin_id, "pwd": temp_admin_hash},
