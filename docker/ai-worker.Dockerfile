@@ -12,11 +12,12 @@ FROM python:3.12-slim AS base
 
 WORKDIR /app
 
+# See faiss-service.Dockerfile's comment on this same block — identical
+# fix, same reasoning (CPU-only torch with PyPI fallback and high timeout/retries).
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 torch --extra-index-url https://download.pytorch.org/whl/cpu
+
 COPY agents/requirements.txt ./agents/requirements.txt
-# See faiss-service.Dockerfile's comment on this same line — identical
-# fix, same reasoning (CPU-only torch to avoid ~1GB+ of unused CUDA deps).
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir -r agents/requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 -r agents/requirements.txt
 
 COPY agents ./agents
 COPY knowledgebase ./knowledgebase

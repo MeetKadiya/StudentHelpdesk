@@ -20,17 +20,18 @@ FROM python:3.12-slim AS base
 
 WORKDIR /app
 
+# Install CPU-only torch FIRST, from PyTorch's CPU wheel index with PyPI fallback
+# for general dependencies, before `pip install -r requirements.txt` resolves
+# sentence-transformers' torch dependency. Without this, pip pulls the default
+# GPU/CUDA-enabled torch wheel — over 1GB of nvidia-* packages (cuDNN, cuSPARSELt,
+# NCCL, etc.) that this Docker Compose setup has no GPU passthrough to ever use.
+# Using --extra-index-url ensures dependencies (sympy, networkx, fsspec, etc.)
+# are fetched from fast PyPI CDN while torch comes from PyTorch CPU repo.
+# High timeout and retries protect against network drops during the ~200MB download.
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 torch --extra-index-url https://download.pytorch.org/whl/cpu
+
 COPY agents/requirements.txt ./agents/requirements.txt
-# Install CPU-only torch FIRST, from PyTorch's own CPU wheel index, before
-# `pip install -r requirements.txt` resolves sentence-transformers' torch
-# dependency. Without this, pip pulls the default GPU/CUDA-enabled torch
-# wheel — over 1GB of nvidia-* packages (cuDNN, cuSPARSELt, NCCL, etc.)
-# that this Docker Compose setup has no GPU passthrough to ever use. Found
-# during the first-ever real `docker compose up --build` (2026-08-27) —
-# never caught earlier because no Docker daemon was available during
-# development to actually run this build until now.
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
-RUN pip install --no-cache-dir -r agents/requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 --retries=10 -r agents/requirements.txt
 
 COPY agents ./agents
 COPY knowledgebase ./knowledgebase
