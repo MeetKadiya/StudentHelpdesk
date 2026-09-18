@@ -27,8 +27,13 @@ class TokenResponse(BaseModel):
 
 
 class ChangePasswordRequest(BaseModel):
-    current_password: str
+    current_password: str | None = None
+    old_password: str | None = None
     new_password: str
+
+    @property
+    def effective_current_password(self) -> str:
+        return self.current_password or self.old_password or ""
 
 
 class UserOut(BaseModel):

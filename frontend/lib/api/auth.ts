@@ -57,17 +57,23 @@ export function refresh(refreshToken: string): Promise<TokenResponse> {
 }
 
 export interface ChangePasswordRequest {
-  old_password: string;
+  current_password?: string;
+  old_password?: string;
   new_password: string;
 }
 
 export function changePassword(
   accessToken: string,
-  payload: ChangePasswordRequest
+  payload: { current_password?: string; old_password?: string; new_password: string }
 ): Promise<{ success: boolean; message: string }> {
+  const current = payload.current_password || payload.old_password || "";
   return apiFetch<{ success: boolean; message: string }>("/auth/change-password", {
     method: "POST",
-    body: payload,
+    body: {
+      current_password: current,
+      old_password: current,
+      new_password: payload.new_password,
+    },
     accessToken,
   });
 }

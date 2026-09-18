@@ -52,7 +52,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
         old_password: oldPw,
         new_password: newPw,
       });
-      if (result.success) {
+      if (result.success || result.message) {
         setPwSuccess("✅ Password changed successfully!");
         setOldPw("");
         setNewPw("");

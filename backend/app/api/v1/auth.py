@@ -25,15 +25,19 @@ async def change_password(
     payload: ChangePasswordRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict[str, str]:
+) -> dict[str, object]:
     """Allows authenticated user (student/faculty/clerk/admin) to change their password."""
-    try:
-        await auth_service.change_password(
-            db, user.id, payload.current_password, payload.new_password
+    cur_pw = payload.effective_current_password
+    if not cur_pw:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is required.",
         )
+    try:
+        await auth_service.change_password(db, user.id, cur_pw, payload.new_password)
     except AuthError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-    return {"message": "Password changed successfully."}
+    return {"success": True, "message": "Password changed successfully."}
 
 
 @router.get("/me", response_model=UserOut)
