@@ -23,15 +23,22 @@ async def _get_routed_ticket(
     db: AsyncSession, ticket_id: uuid.UUID, faculty_id: uuid.UUID
 ) -> Ticket:
     ticket = await db.get(Ticket, ticket_id)
-    if ticket is None or ticket.assigned_faculty_id != faculty_id:
+    if ticket is None:
+        raise FacultyAccessError("Ticket not found.")
+    # Faculty members are scoped strictly to academic/study tickets or tickets assigned to them
+    if ticket.assigned_faculty_id != faculty_id and ticket.category != "academic":
         raise FacultyAccessError("Ticket not found.")
     return ticket
 
 
 async def list_routed_tickets(db: AsyncSession, faculty_id: uuid.UUID) -> list[Ticket]:
+    # Scoped strictly to academic/study inquiries and tickets assigned to this faculty desk
     result = await db.scalars(
         select(Ticket)
-        .where(Ticket.assigned_faculty_id == faculty_id)
+        .where(
+            (Ticket.assigned_faculty_id == faculty_id) |
+            (Ticket.category == "academic")
+        )
         .order_by(Ticket.created_at.desc())
     )
     return list(result)

@@ -39,7 +39,95 @@ def triage_student_query(
     combined = f"{subject or ''} {message} {category_hint or ''}".lower().strip()
 
     # -------------------------------------------------------------
-    # 1. UNIVERSITY ADMINISTRATION ROUTING
+    # 1. ACADEMIC FACULTY ROUTING (Study, Assignments, Exams, Attendance)
+    # -------------------------------------------------------------
+    # Assignments, Homework, Lab Work & Course Submissions (handles common student typos like assingment/asigment)
+    if any(k in combined for k in [
+        "assign", "assing", "asig", "homework", "hw", "submit", "submision",
+        "submission", "submitting", "practical", "lab file", "lab report",
+        "project report", "viva", "lab work", "presentation", "assignment"
+    ]):
+        dept = "Academic Faculty & Course Instructors"
+        if any(k in combined for k in ["ai and ds", "ai & ds", "ai/ds", "data science", "machine learning", "artificial intelligence"]):
+            dept = "Faculty of AI & Data Science"
+        elif any(k in combined for k in ["cs", "cse", "computer", "python", "java", "coding", "software"]):
+            dept = "Faculty of Computer Science & Engineering"
+        elif any(k in combined for k in ["math", "maths", "calculus", "discrete", "algebra"]):
+            dept = "Department of Mathematics & Computing"
+        return ClerkTriageResult(
+            target_role="faculty",
+            department=dept,
+            category_slug="academic",
+            priority="normal",
+            reason="Inquiry relates to coursework assignments, project submissions, or academic deadlines.",
+            summary_banner=f"🎓 Sorted to Academic Faculty — {dept}",
+        )
+
+    # Attendance Dispute, Lecture Absence & Medical Shortage
+    if any(k in combined for k in [
+        "attendance", "attend", "shortage", "absent", "medical leave", "condonation", "percentage",
+        "75%", "attendance debarred", "detained", "lecture missed", "period", "missed class"
+    ]):
+        return ClerkTriageResult(
+            target_role="faculty",
+            department="Department Faculty & Attendance Committee",
+            category_slug="academic",
+            priority="high",
+            reason="Inquiry concerns attendance shortage, lecture regularization, or course faculty review.",
+            summary_banner="🎓 Sorted to Academic Faculty — Course Faculty & Attendance Cell",
+        )
+
+    # Examinations, Grading & Paper Re-evaluations
+    if any(k in combined for k in [
+        "exam", "hall ticket", "grade", "marks", "re-evaluation", "recheck", "rechecking",
+        "spi", "cpi", "cgpa", "gpa", "marksheet", "supplementary", "mid-sem", "midsem",
+        "end-sem", "endsem", "evaluation", "answer sheet", "backlog", "re-exam"
+    ]):
+        return ClerkTriageResult(
+            target_role="faculty",
+            department="Controller of Examinations & Course Faculty",
+            category_slug="academic",
+            priority="high" if any(k in combined for k in ["hall ticket", "admit card", "tomorrow", "urgent"]) else "normal",
+            reason="Inquiry relates to examination scheduling, grade card disputes, or academic performance.",
+            summary_banner="🎓 Sorted to Academic Faculty — Examination & Grading Faculty",
+        )
+
+    # Course Advising, Curriculum, Syllabus & Electives
+    if any(k in combined for k in [
+        "advising", "advisor", "add/drop", "add drop", "prerequisite", "waiver",
+        "elective", "course registration", "syllabus", "credit", "credits", "curriculum",
+        "major", "minor", "specialization"
+    ]):
+        return ClerkTriageResult(
+            target_role="faculty",
+            department="Academic Affairs & Department Faculty Advisor",
+            category_slug="academic",
+            priority="high" if any(k in combined for k in ["deadline", "graduation", "urgent"]) else "normal",
+            reason="Inquiry involves course syllabus, elective selection, or academic advisor approvals.",
+            summary_banner="🎓 Sorted to Academic Faculty — Department Faculty Advisor",
+        )
+
+    # Subject / Topic Query & Study Guidance (Maths, Programming, AI, Cloud, etc.)
+    if any(k in combined for k in [
+        "code", "python", "java", "math", "maths", "algorithm", "lecture", "homework",
+        "project", "viva", "seminar", "thesis", "research", "lab", "study", "study material",
+        "notes", "subject", "concept", "doubt", "unit", "chapter", "ai", "ds", "cse", "cs",
+        "professor", "prof", "faculty", "teacher", "sir", "madam", "mam"
+    ]):
+        dept = "Subject Faculty & Academic Mentors"
+        if any(k in combined for k in ["ai and ds", "ai & ds", "ai", "ds", "data science"]):
+            dept = "Faculty of AI & Data Science"
+        return ClerkTriageResult(
+            target_role="faculty",
+            department=dept,
+            category_slug="academic",
+            priority="normal",
+            reason="Inquiry relates to academic course subject matter, study guidance, or professor consultation.",
+            summary_banner=f"🎓 Sorted to Academic Faculty — {dept}",
+        )
+
+    # -------------------------------------------------------------
+    # 2. UNIVERSITY ADMINISTRATION ROUTING (Fees, Facilities, IT, Records)
     # -------------------------------------------------------------
     # Financial & Fee Dues (Bursar / Accounts)
     if any(k in combined for k in [
@@ -89,13 +177,14 @@ def triage_student_query(
     # Campus Housing, Hostel & Facilities
     if any(k in combined for k in [
         "hostel", "dorm", "room", "mess", "canteen", "bed", "allotment", "laundry",
-        "maintenance", "ac repair", "water", "electricity", "warden", "campus facilities"
+        "maintenance", "ac repair", "water", "electricity", "warden", "campus facilities",
+        "cooler", "pipe", "cleaning", "clean"
     ]):
         return ClerkTriageResult(
             target_role="admin",
             department="Hostel Administration & Student Facilities",
             category_slug="general",
-            priority="high" if any(k in combined for k in ["leak", "broken", "medical", "urgent"]) else "normal",
+            priority="high" if any(k in combined for k in ["leak", "broken", "medical", "urgent", "bad water", "no water"]) else "normal",
             reason="Inquiry relates to campus residential facilities, mess services, or maintenance.",
             summary_banner="🏛️ Sorted to University Administration — Hostel & Student Facilities",
         )
@@ -114,73 +203,12 @@ def triage_student_query(
             summary_banner="🏛️ Sorted to University Administration — Student Health Services",
         )
 
-    # -------------------------------------------------------------
-    # 2. FACULTY ROUTING (Academic, Curriculum, Advising & Exams)
-    # -------------------------------------------------------------
-    # Course Advising, Add/Drop & Prerequisite Waivers
-    if any(k in combined for k in [
-        "advising", "advisor", "add/drop", "add drop", "prerequisite", "waiver",
-        "elective", "course registration", "syllabus", "credit", "credits", "curriculum",
-        "major", "minor", "specialization"
-    ]):
-        return ClerkTriageResult(
-            target_role="faculty",
-            department="Academic Affairs & Department Faculty Advisor",
-            category_slug="academic",
-            priority="high" if any(k in combined for k in ["deadline", "graduation", "urgent"]) else "normal",
-            reason="Inquiry involves course syllabus, elective selection, or academic advisor approvals.",
-            summary_banner="🎓 Sorted to Academic Faculty — Department Faculty Advisor",
-        )
-
-    # Attendance Dispute & Medical Shortage
-    if any(k in combined for k in [
-        "attendance", "shortage", "absent", "medical leave", "condonation", "percentage",
-        "75%", "attendance debarred", "detained", "lecture missed"
-    ]):
-        return ClerkTriageResult(
-            target_role="faculty",
-            department="Department Faculty & Attendance Committee",
-            category_slug="academic",
-            priority="high",
-            reason="Inquiry concerns attendance shortage, lecture regularization, or course faculty review.",
-            summary_banner="🎓 Sorted to Academic Faculty — Course Faculty & Attendance Cell",
-        )
-
-    # Examinations, Grading & Paper Re-evaluations
-    if any(k in combined for k in [
-        "exam", "hall ticket", "grade", "marks", "re-evaluation", "recheck", "spi",
-        "cpi", "cgpa", "marksheet", "supplementary", "mid-sem", "end-sem", "evaluation",
-        "professor", "assignment grade", "practical viva", "submission"
-    ]):
-        return ClerkTriageResult(
-            target_role="faculty",
-            department="Controller of Examinations & Course Faculty",
-            category_slug="academic",
-            priority="normal",
-            reason="Inquiry relates to examination scheduling, grade card disputes, or academic performance.",
-            summary_banner="🎓 Sorted to Academic Faculty — Examination & Grading Faculty",
-        )
-
-    # Subject / Topic Query (Maths, Programming, AI, Cloud, etc.)
-    if any(k in combined for k in [
-        "code", "python", "java", "math", "algorithm", "lecture", "homework", "project",
-        "viva", "seminar", "thesis", "research", "lab"
-    ]):
-        return ClerkTriageResult(
-            target_role="faculty",
-            department="Subject Faculty & Academic Mentors",
-            category_slug="academic",
-            priority="normal",
-            reason="Inquiry relates to academic course subject matter, lab exercises, or project guidance.",
-            summary_banner="🎓 Sorted to Academic Faculty — Subject Specialist",
-        )
-
     # Default fallback: General university inquiry
     return ClerkTriageResult(
         target_role="admin",
         department="General Campus Student HelpDesk",
         category_slug="general",
         priority="normal",
-        reason="General campus inquiry triaged by Clerk Assistant for initial administrative review.",
+        reason="General campus inquiry triaged by Clerk Assistant for administrative review.",
         summary_banner="🏛️ Sorted to University Administration — General Student Desk",
     )
