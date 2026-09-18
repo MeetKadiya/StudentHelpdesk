@@ -14,6 +14,19 @@ const nextConfig = {
   // functional benefit, just a few saved bytes per request and one less
   // thing announcing framework/version to clients.
   poweredByHeader: false,
+  async rewrites() {
+    const backend = process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
+    if (backend && backend.startsWith("http")) {
+      const cleanOrigin = backend.replace(/\/api\/v1\/?$/, "");
+      return [
+        {
+          source: "/api/v1/:path*",
+          destination: `${cleanOrigin}/api/v1/:path*`,
+        },
+      ];
+    }
+    return [];
+  },
 };
 
 export default nextConfig;

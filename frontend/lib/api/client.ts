@@ -65,11 +65,31 @@ export async function apiFetch<T>(path: string, options: ApiFetchOptions = {}): 
   }
 
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  let response: Response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ApiError(
+        504,
+        "Request timed out. The backend server on Render is likely waking up from standby (which takes 30-50s on free tier) or starting up. Please wait a few seconds and try again."
+      );
+    }
+    throw new ApiError(
+      503,
+      "Cannot connect to the backend server. The service may still be deploying on Render or temporarily offline."
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     let detail: unknown = `Request to ${path} failed with status ${response.status}`;
