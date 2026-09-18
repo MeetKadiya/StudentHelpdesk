@@ -1,4 +1,5 @@
 import logging
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,6 +10,7 @@ import app.db.models
 from app.api.internal import router as internal_router
 from app.api.v1 import api_router
 from app.core.config import get_settings
+from app.core.security import hash_password
 from app.db.session import Base, engine
 
 logger = logging.getLogger(__name__)
@@ -71,9 +73,9 @@ async def lifespan(app: FastAPI):
                     )
                 )
                 # Seed initial bootstrap admin account if none exists
-                from app.core.security import hash_password
-                import uuid
-                check_admin = await conn.execute(text("SELECT id FROM users WHERE role = 'admin' LIMIT 1;"))
+                check_admin = await conn.execute(
+                    text("SELECT id FROM users WHERE role = 'admin' LIMIT 1;")
+                )
                 if check_admin.fetchone() is None:
                     admin_id = str(uuid.uuid4())
                     temp_admin_hash = hash_password("Admin@Campus2026")

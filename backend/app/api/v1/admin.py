@@ -11,13 +11,13 @@ from app.api.deps import require_admin
 from app.db.models.user import User
 from app.db.session import get_db
 from app.schemas.admin import (
+    AdminCreateIn,
     AdminTicketDetailOut,
     AdminTicketOut,
     AdminTicketReassign,
     AdminTicketRespond,
     AnalyticsSummaryOut,
     ClerkCreateIn,
-    AdminCreateIn,
     ExamControlStatusOut,
     ExamControlToggleIn,
     ExamRegistrationItemOut,
@@ -290,7 +290,6 @@ async def create_admin_account(
         return UserOut.model_validate(user)
     except AdminServiceError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
-
 
 
 @router.get("/exam-form/status", response_model=ExamControlStatusOut)

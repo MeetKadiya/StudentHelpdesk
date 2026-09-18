@@ -144,7 +144,6 @@ class AdminCreateIn(BaseModel):
     password: str | None = None
 
 
-
 class ImportedStudentItem(BaseModel):
     name: str
     email: str

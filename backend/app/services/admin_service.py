@@ -9,6 +9,8 @@ BACKEND-07). No metric here is invented or approximated with fake data;
 each is a plain aggregate with a stated definition. See AnalyticsSummaryOut
 docstrings in app/schemas/admin.py for exact definitions."""
 
+import csv
+import io
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -16,27 +18,21 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.agent_run import AgentRun
-from app.db.models.audit_log import AuditLog
-from app.db.models.faculty_routing_rule import FacultyRoutingRule
-from app.db.models.message import Message
-from app.db.models.ticket import Ticket
-from app.db.models.user import User
-from app.services.ai_dispatch_service import enqueue_learning_job
-
-logger = logging.getLogger(__name__)
-import csv
-import io
-
 from app.core.security import hash_password
+from app.db.models.agent_run import AgentRun
 from app.db.models.assignment import Assignment, AssignmentSubmission
 from app.db.models.attendance import AttendanceRecord, AttendanceSession
+from app.db.models.audit_log import AuditLog
 from app.db.models.exam import ExamControlSetting, ExamRegistration
+from app.db.models.faculty_routing_rule import FacultyRoutingRule
+from app.db.models.message import Message
 from app.db.models.payment import PaymentTransaction
 from app.db.models.student_record import StudentMark
+from app.db.models.ticket import Ticket
+from app.db.models.user import User
 from app.schemas.admin import (
-    ClerkCreateIn,
     AdminCreateIn,
+    ClerkCreateIn,
     ExamControlStatusOut,
     ExamControlToggleIn,
     FacultyCreateIn,
@@ -46,6 +42,9 @@ from app.schemas.admin import (
     StudentCsvImportResult,
 )
 from app.schemas.auth import UserOut
+from app.services.ai_dispatch_service import enqueue_learning_job
+
+logger = logging.getLogger(__name__)
 
 
 class AdminServiceError(Exception):
@@ -705,9 +704,7 @@ async def create_single_faculty(
     return user
 
 
-async def create_single_clerk(
-    db: AsyncSession, admin_id: uuid.UUID, data: ClerkCreateIn
-) -> User:
+async def create_single_clerk(db: AsyncSession, admin_id: uuid.UUID, data: ClerkCreateIn) -> User:
     clean_email = data.email.strip().lower()
     if await db.scalar(select(User).where(User.email == clean_email)):
         raise AdminServiceError(f"Email '{clean_email}' already registered.")
@@ -730,9 +727,7 @@ async def create_single_clerk(
     return user
 
 
-async def create_single_admin(
-    db: AsyncSession, admin_id: uuid.UUID, data: AdminCreateIn
-) -> User:
+async def create_single_admin(db: AsyncSession, admin_id: uuid.UUID, data: AdminCreateIn) -> User:
     clean_email = data.email.strip().lower()
     if await db.scalar(select(User).where(User.email == clean_email)):
         raise AdminServiceError(f"Email '{clean_email}' already registered.")
@@ -752,7 +747,6 @@ async def create_single_admin(
     await db.commit()
     await db.refresh(user)
     return user
-
 
 
 # ============================================================================
