@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/admin";
 import type { UserOut } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
+import { triageStudentQueryClient } from "@/lib/services/clerk-triage";
 import {
   listAllPayments,
   getPaymentStats,
@@ -78,6 +79,11 @@ function ClerkAssistantTriageSection({ accessToken }: { accessToken: string }) {
   // Reassignment state
   const [reassignUserId, setReassignUserId] = useState<string>("");
   const [isReassigning, setIsReassigning] = useState(false);
+
+  // Live Query Analyzer state
+  const [testInput, setTestInput] = useState("");
+  const testResult =
+    testInput.trim().length >= 3 ? triageStudentQueryClient(testInput, testInput, null) : null;
 
   function reload() {
     listAdminTickets(accessToken)
@@ -198,6 +204,90 @@ function ClerkAssistantTriageSection({ accessToken }: { accessToken: string }) {
             {allTickets.length} Inquiries Triaged
           </span>
         </div>
+      </div>
+
+      {/* Clerk Assistant Interactive Sandbox / Sorter */}
+      <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 via-purple-50/60 to-blue-50/80 p-4 space-y-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🤖</span>
+            <div>
+              <h3 className="text-xs font-black text-indigo-950 uppercase tracking-wide flex items-center gap-1.5">
+                Clerk Assistant Intelligent Sorter — Live Query Analyzer
+              </h3>
+              <p className="text-[11px] text-slate-600">
+                Test any sample student query to see how the Clerk Assistant automatically classifies and routes between <strong>Faculty</strong> and <strong>Administration</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setTestInput("I have attendance shortage in Calculus course due to medical reasons")}
+              className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-white border border-purple-200 text-purple-700 hover:bg-purple-50 transition-colors shadow-2xs"
+            >
+              🎓 Test Faculty (Attendance)
+            </button>
+            <button
+              type="button"
+              onClick={() => setTestInput("Need fee receipt for tuition payment to submit for education loan")}
+              className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors shadow-2xs"
+            >
+              🏛️ Test Admin (Bursar / Fee)
+            </button>
+            <button
+              type="button"
+              onClick={() => setTestInput("Water cooler in hostel block 3 is leaking bad water")}
+              className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors shadow-2xs"
+            >
+              🏛️ Test Admin (Hostel Facilities)
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={testInput}
+            onChange={(e) => setTestInput(e.target.value)}
+            placeholder="Type any student query (e.g. syllabus, marks recheck, wifi down, tuition fee, hostel bed)..."
+            className="flex-1 rounded-xl border border-indigo-200 bg-white py-2 px-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs"
+          />
+          {testInput && (
+            <button
+              type="button"
+              onClick={() => setTestInput("")}
+              className="text-xs text-slate-500 hover:text-slate-700 font-bold px-2 py-1"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {testResult && (
+          <div className="rounded-xl border border-white bg-white/95 p-3 text-xs shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className={`text-xs font-black uppercase px-2.5 py-1 rounded-lg border ${
+                  testResult.targetRole === "faculty"
+                    ? "bg-purple-100 text-purple-900 border-purple-300"
+                    : "bg-blue-100 text-blue-900 border-blue-300"
+                }`}
+              >
+                {testResult.targetRole === "faculty" ? "🎓 Sorted to Academic Faculty" : "🏛️ Sorted to University Administration"}
+              </span>
+              <span className="text-slate-900 font-bold">
+                {testResult.department}
+              </span>
+              <span className="text-slate-500 text-[11px]">
+                · {testResult.reason}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-100 text-slate-700 self-start sm:self-auto shrink-0">
+              Priority: {testResult.priority}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards */}

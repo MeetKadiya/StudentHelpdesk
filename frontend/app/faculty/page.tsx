@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useRequireFaculty } from "@/lib/auth/use-require-faculty";
 import { listRoutedTickets, type FacultyTicketOut } from "@/lib/api/faculty";
+import { triageStudentQueryClient } from "@/lib/services/clerk-triage";
 import {
   sendEmail,
   sendBroadcastEmail,
@@ -2197,6 +2198,16 @@ export default function FacultyDashboardPage() {
                       <span>•</span>
                       <span>Received: {new Date(t.created_at).toLocaleString()}</span>
                     </div>
+                    {(() => {
+                      const triage = triageStudentQueryClient(t.subject, t.subject || "", t.category);
+                      return (
+                        <div className="flex items-center gap-2 pt-0.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 inline-flex items-center gap-1">
+                            <span>🤖</span> Sorted by Clerk Assistant: {triage.department}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">

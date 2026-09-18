@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { useRequireAuth } from "@/lib/auth/use-require-auth";
 import { ApiError } from "@/lib/api/client";
 import { getTicket, getTicketStatus, postTicketMessage, type TicketDetailOut } from "@/lib/api/tickets";
+import { triageStudentQueryClient } from "@/lib/services/clerk-triage";
 
 // Status polling interval. NFR-2 (requirements.md) requires the UI not block
 // on long-running agent runs; requirements.md §5 leaves websocket-vs-polling
@@ -162,6 +163,27 @@ export default function TicketDetailPage() {
           </div>
           <StatusBadge status={ticket.status} />
         </div>
+
+        {(() => {
+          const triage = triageStudentQueryClient(ticket.subject, ticket.subject || "", ticket.category);
+          return (
+            <div className="mt-3 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🤖</span>
+                <span className="text-slate-700">
+                  Sorted by <strong>Clerk Assistant</strong> to:{" "}
+                  <strong className={triage.targetRole === "faculty" ? "text-purple-700" : "text-indigo-700"}>
+                    {triage.targetRole === "faculty" ? "🎓 Academic Faculty" : "🏛️ University Administration"}
+                  </strong>{" "}
+                  · <span className="text-slate-600">{triage.department}</span>
+                </span>
+              </div>
+              <span className="self-start sm:self-center text-[10px] uppercase font-bold text-indigo-900 bg-white px-2 py-0.5 rounded border border-indigo-200">
+                Priority: {triage.priority}
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       <ul className="space-y-3">

@@ -9,6 +9,7 @@ import { useRequireStudent } from "@/lib/auth/use-require-student";
 import { ApiError } from "@/lib/api/client";
 import { createTicket, listTickets, type TicketOut } from "@/lib/api/tickets";
 import { CAMPUS_SERVICES } from "@/data/student-services";
+import { triageStudentQueryClient } from "@/lib/services/clerk-triage";
 
 const STATUS_STYLES: Record<string, string> = {
   open: "bg-status-pendingBg text-status-pending",
@@ -45,6 +46,9 @@ function TicketsContent() {
   const [message, setMessage] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const liveTriage =
+    message.trim().length >= 3 ? triageStudentQueryClient(subject, message, category) : null;
 
   async function refreshTickets(token: string) {
     try {
@@ -159,11 +163,41 @@ function TicketsContent() {
             />
           </div>
 
+          {liveTriage && (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/80 p-3.5 text-xs text-indigo-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 shadow-xs">
+              <div className="flex items-start sm:items-center gap-2.5">
+                <span className="text-xl shrink-0">🤖</span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold uppercase tracking-wide text-indigo-800 text-[10px] bg-indigo-200/70 px-2 py-0.5 rounded">
+                      Clerk Assistant Live Sorting
+                    </span>
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                        liveTriage.targetRole === "faculty"
+                          ? "bg-purple-100 text-purple-800 border border-purple-200"
+                          : "bg-blue-100 text-blue-800 border border-blue-200"
+                      }`}
+                    >
+                      {liveTriage.targetRole === "faculty" ? "🎓 Academic Faculty" : "🏛️ University Administration"}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-slate-700 text-xs">
+                    <strong>Routing Destination:</strong> {liveTriage.department} · <em>{liveTriage.reason}</em>
+                  </p>
+                </div>
+              </div>
+              <span className="self-start sm:self-center text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-white border border-indigo-200 text-indigo-900 shrink-0">
+                Priority: {liveTriage.priority.toUpperCase()}
+              </span>
+            </div>
+          )}
+
           {createdTicketId && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
               <div className="space-y-0.5">
                 <p className="font-bold flex items-center gap-1.5 text-emerald-800">
-                  <span>✅</span> Request Created & ID Generated Successfully!
+                  <span>✅</span> Request Created &amp; Sorted by Clerk Assistant!
                 </p>
                 <p className="text-[11px] text-emerald-700">
                   Ticket ID: <span className="font-mono font-bold bg-white/80 px-2 py-0.5 rounded border border-emerald-300">#{createdTicketId}</span>
@@ -217,28 +251,42 @@ function TicketsContent() {
 
         {tickets !== null && tickets.length > 0 && (
           <ul className="surface-card divide-y divide-line">
-            {tickets.map((ticket) => (
-              <li key={ticket.id}>
-                <Link href={`/tickets/${ticket.id}`} className="surface-row flex items-center justify-between">
-                  <div className="min-w-0 pr-4 space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                        #{ticket.id.slice(0, 8).toUpperCase()}
-                      </span>
-                      <span className="truncate text-sm font-semibold text-ink">
-                        {ticket.subject || "(no subject)"}
-                      </span>
+            {tickets.map((ticket) => {
+              const triage = triageStudentQueryClient(ticket.subject, ticket.subject || "", ticket.category);
+              return (
+                <li key={ticket.id}>
+                  <Link href={`/tickets/${ticket.id}`} className="surface-row flex items-center justify-between">
+                    <div className="min-w-0 pr-4 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                          #{ticket.id.slice(0, 8).toUpperCase()}
+                        </span>
+                        <span className="truncate text-sm font-semibold text-ink">
+                          {ticket.subject || "(no subject)"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {ticket.category && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 inline-block">
+                            {ticket.category}
+                          </span>
+                        )}
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded border inline-flex items-center gap-1 ${
+                            triage.targetRole === "faculty"
+                              ? "bg-purple-50 text-purple-700 border-purple-200"
+                              : "bg-blue-50 text-blue-700 border-blue-200"
+                          }`}
+                        >
+                          {triage.targetRole === "faculty" ? "🎓 Faculty Desk" : "🏛️ Admin Desk"}
+                        </span>
+                      </div>
                     </div>
-                    {ticket.category && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 inline-block">
-                        {ticket.category}
-                      </span>
-                    )}
-                  </div>
-                  <StatusBadge status={ticket.status} />
-                </Link>
-              </li>
-            ))}
+                    <StatusBadge status={ticket.status} />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
