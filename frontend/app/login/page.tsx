@@ -486,26 +486,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Role Demo Credentials Helper */}
-            {selectedRole === "clerk" && (
-              <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/90 p-2.5 sm:p-3 text-xs flex items-center justify-between gap-2">
-                <div>
-                  <p className="font-bold text-amber-900 text-[11px] sm:text-xs">📋 Demo Clerk Desk Credentials</p>
-                  <p className="text-[10px] sm:text-[11px] text-amber-800 font-mono mt-0.5">clerk@university.edu • Clerk@2026!Desk</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail("clerk@university.edu");
-                    setPassword("Clerk@2026!Desk");
-                    setError(null);
-                  }}
-                  className="shrink-0 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-[10px] sm:text-xs transition-colors cursor-pointer"
-                >
-                  Auto Fill
-                </button>
-              </div>
-            )}
+
 
 
             {/* Form */}
