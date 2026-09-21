@@ -88,6 +88,23 @@ async def lifespan(app: FastAPI):
                         {"id": admin_id, "pwd": temp_admin_hash},
                     )
                     logger.info("Initialized default bootstrap admin: admin@university.edu")
+
+                # Seed initial bootstrap clerk account if none exists
+                check_clerk = await conn.execute(
+                    text("SELECT id FROM users WHERE role = 'clerk' LIMIT 1;")
+                )
+                if check_clerk.fetchone() is None:
+                    clerk_id = str(uuid.uuid4())
+                    temp_clerk_hash = hash_password("Clerk@2026!Desk")
+                    await conn.execute(
+                        text(
+                            "INSERT INTO users (id, email, password_hash, role, name, branch, created_at) "
+                            "VALUES (:id, 'clerk@university.edu', :pwd, 'clerk', 'Central HelpDesk Clerk', 'Student Affairs & Support', NOW()) "
+                            "ON CONFLICT (email) DO NOTHING;"
+                        ),
+                        {"id": clerk_id, "pwd": temp_clerk_hash},
+                    )
+                    logger.info("Initialized default bootstrap clerk: clerk@university.edu")
     except Exception as exc:  # noqa: BLE001
         logger.warning("Database schema auto-creation notice: %s", exc)
     yield
