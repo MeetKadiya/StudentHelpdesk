@@ -36,6 +36,11 @@ class ChangePasswordRequest(BaseModel):
         return self.current_password or self.old_password or ""
 
 
+class ResetPasswordRequest(BaseModel):
+    email: str  # Email or Enrollment Number
+    new_password: str
+
+
 class UserOut(BaseModel):
     id: uuid.UUID
     email: EmailStr

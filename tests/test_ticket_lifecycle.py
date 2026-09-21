@@ -11,15 +11,9 @@ from tests.helpers import auth_headers, login
 
 @pytest.mark.asyncio
 async def test_signup_login_create_ticket_enqueues_ai_job(
-    client: AsyncClient, mock_celery
+    client: AsyncClient, mock_celery, make_user
 ):
-    signup = await client.post(
-        "/api/v1/auth/signup",
-        json={"email": "stu1@example.edu", "password": "testpass123"},
-    )
-    assert signup.status_code == 201
-    assert signup.json()["role"] == "student"
-
+    await make_user("stu1@example.edu", password="testpass123", role="student")
     token = await login(client, "stu1@example.edu")
 
     me = await client.get("/api/v1/auth/me", headers=auth_headers(token))
@@ -53,12 +47,9 @@ async def test_signup_login_create_ticket_enqueues_ai_job(
 
 @pytest.mark.asyncio
 async def test_ai_auto_respond_write_back_visible_to_student(
-    client: AsyncClient, mock_celery
+    client: AsyncClient, mock_celery, make_user
 ):
-    await client.post(
-        "/api/v1/auth/signup",
-        json={"email": "stu2@example.edu", "password": "testpass123"},
-    )
+    await make_user("stu2@example.edu", password="testpass123", role="student")
     token = await login(client, "stu2@example.edu")
     created = (
         await client.post(

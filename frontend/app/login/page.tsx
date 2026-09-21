@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/auth-context";
 import { ApiError } from "@/lib/api/client";
+import { resetPassword } from "@/lib/api/auth";
 
 // Clean alphanumeric set excluding confusing chars (0, O, 1, I, l)
 const CAPTCHA_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -15,6 +16,78 @@ function generateRandomCaptcha(length = 6): string {
     result += CAPTCHA_CHARS.charAt(Math.floor(Math.random() * CAPTCHA_CHARS.length));
   }
   return result;
+}
+
+function renderCaptchaToCanvas(canvas: HTMLCanvasElement | null, code: string) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const width = canvas.width;
+  const height = canvas.height;
+
+  // Background with soft security gradient
+  const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+  bgGradient.addColorStop(0, "#f8fafc");
+  bgGradient.addColorStop(1, "#e2e8f0");
+  ctx.fillStyle = bgGradient;
+  ctx.fillRect(0, 0, width, height);
+
+  // Background security noise dots
+  for (let i = 0; i < 35; i++) {
+    ctx.fillStyle = `rgba(${Math.floor(Math.random() * 150)}, ${Math.floor(
+      Math.random() * 150
+    )}, ${Math.floor(Math.random() * 200)}, 0.3)`;
+    ctx.beginPath();
+    ctx.arc(
+      Math.random() * width,
+      Math.random() * height,
+      Math.random() * 2 + 0.8,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  // Background wave lines
+  for (let i = 0; i < 3; i++) {
+    ctx.strokeStyle = `rgba(${Math.floor(Math.random() * 100 + 80)}, ${Math.floor(
+      Math.random() * 100 + 80
+    )}, ${Math.floor(Math.random() * 150 + 100)}, 0.4)`;
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(Math.random() * 10, Math.random() * height);
+    ctx.bezierCurveTo(
+      width * 0.3,
+      Math.random() * height,
+      width * 0.7,
+      Math.random() * height,
+      width - 10,
+      Math.random() * height
+    );
+    ctx.stroke();
+  }
+
+  // Render characters with variable rotation, size, and coloring
+  const charSpacing = width / (code.length + 0.8);
+  for (let i = 0; i < code.length; i++) {
+    const char = code[i];
+    ctx.save();
+    const x = charSpacing * (i + 0.65);
+    const y = height / 2 + (Math.random() * 6 - 3);
+
+    ctx.translate(x, y);
+    const angle = (Math.random() - 0.5) * 0.42;
+    ctx.rotate(angle);
+
+    ctx.font = `bold ${Math.floor(Math.random() * 4 + 20)}px monospace, sans-serif`;
+    const colors = ["#0f172a", "#1e293b", "#1e1b4b", "#3730a3", "#0369a1", "#831843"];
+    ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.fillText(char, 0, 0);
+    ctx.restore();
+  }
 }
 
 export default function LoginPage() {
@@ -37,6 +110,19 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
+  // Forgot Password Modal State
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotNewPassword, setForgotNewPassword] = useState("");
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState("");
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [forgotCaptchaText, setForgotCaptchaText] = useState("");
+  const [forgotCaptchaInput, setForgotCaptchaInput] = useState("");
+  const [forgotCaptchaError, setForgotCaptchaError] = useState(false);
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSuccess, setForgotSuccess] = useState<string | null>(null);
+  const [isForgotSubmitting, setIsForgotSubmitting] = useState(false);
+  const forgotCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   // Auto-redirect if user is already authenticated
   useEffect(() => {
     if (isAuthenticated && !isUserLoading && user) {
@@ -58,82 +144,88 @@ export default function LoginPage() {
     setCaptchaText(newCaptcha);
     setUserCaptchaInput("");
     setCaptchaError(false);
+    renderCaptchaToCanvas(canvasRef.current, newCaptcha);
+  }
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  function refreshForgotCaptcha() {
+    const newCaptcha = generateRandomCaptcha(6);
+    setForgotCaptchaText(newCaptcha);
+    setForgotCaptchaInput("");
+    setForgotCaptchaError(false);
+    renderCaptchaToCanvas(forgotCanvasRef.current, newCaptcha);
+  }
 
-    const width = canvas.width;
-    const height = canvas.height;
-
-    // Background with soft security gradient
-    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
-    bgGradient.addColorStop(0, "#f8fafc");
-    bgGradient.addColorStop(1, "#e2e8f0");
-    ctx.fillStyle = bgGradient;
-    ctx.fillRect(0, 0, width, height);
-
-    // Background security noise dots
-    for (let i = 0; i < 45; i++) {
-      ctx.fillStyle = `rgba(${Math.floor(Math.random() * 150)}, ${Math.floor(
-        Math.random() * 150
-      )}, ${Math.floor(Math.random() * 200)}, 0.3)`;
-      ctx.beginPath();
-      ctx.arc(
-        Math.random() * width,
-        Math.random() * height,
-        Math.random() * 2 + 0.8,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-    }
-
-    // Background wave lines
-    for (let i = 0; i < 4; i++) {
-      ctx.strokeStyle = `rgba(${Math.floor(Math.random() * 100 + 80)}, ${Math.floor(
-        Math.random() * 100 + 80
-      )}, ${Math.floor(Math.random() * 150 + 100)}, 0.4)`;
-      ctx.lineWidth = 1.3;
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * 10, Math.random() * height);
-      ctx.bezierCurveTo(
-        width * 0.3,
-        Math.random() * height,
-        width * 0.7,
-        Math.random() * height,
-        width - 10,
-        Math.random() * height
-      );
-      ctx.stroke();
-    }
-
-    // Render characters with variable rotation, size, and coloring
-    const charSpacing = width / (newCaptcha.length + 0.8);
-    for (let i = 0; i < newCaptcha.length; i++) {
-      const char = newCaptcha[i];
-      ctx.save();
-      const x = charSpacing * (i + 0.65);
-      const y = height / 2 + (Math.random() * 6 - 3);
-
-      ctx.translate(x, y);
-      const angle = (Math.random() - 0.5) * 0.42;
-      ctx.rotate(angle);
-
-      ctx.font = `bold ${Math.floor(Math.random() * 4 + 21)}px monospace, sans-serif`;
-      const colors = ["#0f172a", "#1e293b", "#1e1b4b", "#3730a3", "#0369a1", "#831843"];
-      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-      ctx.textBaseline = "middle";
-      ctx.textAlign = "center";
-      ctx.fillText(char, 0, 0);
-      ctx.restore();
-    }
+  function openForgotModal() {
+    setForgotEmail(email.trim());
+    setForgotNewPassword("");
+    setForgotConfirmPassword("");
+    setForgotError(null);
+    setForgotSuccess(null);
+    setShowForgotModal(true);
   }
 
   useEffect(() => {
     refreshCaptcha();
   }, []);
+
+  useEffect(() => {
+    if (showForgotModal) {
+      setTimeout(() => {
+        refreshForgotCaptcha();
+      }, 50);
+    }
+  }, [showForgotModal]);
+
+  async function handleForgotSubmit(e: FormEvent) {
+    e.preventDefault();
+    setForgotError(null);
+    setForgotSuccess(null);
+
+    if (!forgotEmail.trim()) {
+      setForgotError("Please enter your registered email or enrollment number.");
+      return;
+    }
+
+    if (forgotNewPassword.length < 6) {
+      setForgotError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotError("Passwords do not match. Please verify.");
+      return;
+    }
+
+    if (!forgotCaptchaInput.trim()) {
+      setForgotCaptchaError(true);
+      setForgotError("Please enter the 6-character verification CAPTCHA.");
+      return;
+    }
+
+    if (forgotCaptchaInput.trim().toUpperCase() !== forgotCaptchaText.toUpperCase()) {
+      setForgotCaptchaError(true);
+      setForgotError("Incorrect verification CAPTCHA code. A new challenge has been generated.");
+      refreshForgotCaptcha();
+      return;
+    }
+
+    setIsForgotSubmitting(true);
+    try {
+      const res = await resetPassword(forgotEmail.trim(), forgotNewPassword);
+      setForgotSuccess(res.message || "Password reset successfully! You can now sign in.");
+      setEmail(forgotEmail.trim());
+      setPassword(forgotNewPassword);
+    } catch (err: unknown) {
+      refreshForgotCaptcha();
+      setForgotError(
+        err instanceof ApiError
+          ? String(err.detail)
+          : "Failed to reset password. Please verify your details and try again."
+      );
+    } finally {
+      setIsForgotSubmitting(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -441,8 +533,8 @@ export default function LoginPage() {
                   </label>
                   <button
                     type="button"
-                    onClick={() => setShowForgotModal(true)}
-                    className="text-[10px] sm:text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors"
+                    onClick={openForgotModal}
+                    className="text-[10px] sm:text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition-colors cursor-pointer"
                   >
                     Forgot password?
                   </button>
@@ -604,47 +696,193 @@ export default function LoginPage() {
 
       {/* Forgot Password Recovery Modal */}
       {showForgotModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-4 animate-fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl sm:rounded-3xl max-w-md w-full p-5 sm:p-7 shadow-2xl border border-slate-200 space-y-4 my-8">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <span>🔑</span> Reset Campus Portal Password
-              </h3>
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 text-base">
+                  🔑
+                </span>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 leading-tight">
+                    Reset Portal Password
+                  </h3>
+                  <p className="text-[10px] text-slate-500">Student &amp; Campus Services</p>
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={() => setShowForgotModal(false)}
-                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+                title="Close"
               >
                 ✕
               </button>
             </div>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              To recover your portal password, enter your registered institutional email. A secure password reset token will be dispatched to your inbox.
-            </p>
-            <input
-              type="email"
-              placeholder="your.email@university.edu"
-              className="w-full rounded-xl border border-slate-300 py-2 px-3 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-600"
-            />
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowForgotModal(false)}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  alert("Password recovery instructions sent to your institutional email address.");
-                  setShowForgotModal(false);
-                }}
-                className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700"
-              >
-                Send Recovery Link
-              </button>
-            </div>
+
+            {forgotSuccess ? (
+              <div className="space-y-4 py-2">
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-center space-y-2">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl text-emerald-600">
+                    ✓
+                  </div>
+                  <h4 className="text-sm font-bold text-emerald-900">Password Reset Successful!</h4>
+                  <p className="text-xs text-emerald-800 leading-relaxed font-medium">
+                    {forgotSuccess}
+                  </p>
+                  <p className="text-[11px] text-emerald-700">
+                    Your credentials have been automatically loaded into the sign-in form.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotModal(false)}
+                  className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-3 px-4 text-xs font-bold uppercase tracking-wider shadow-md transition-all cursor-pointer"
+                >
+                  Proceed to Sign In →
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotSubmit} className="space-y-3.5">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Enter your registered institutional email or enrollment number to set your new password.
+                </p>
+
+                {forgotError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 flex items-start gap-2">
+                    <span className="text-base leading-none">⚠️</span>
+                    <div className="flex-1 font-medium">{forgotError}</div>
+                  </div>
+                )}
+
+                {/* Identifier field */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Registered Email or Enrollment Number
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => {
+                      setForgotEmail(e.target.value);
+                      if (forgotError) setForgotError(null);
+                    }}
+                    placeholder="e.g. 2304050400024 or student@university.edu"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2 px-3 text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
+                  />
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    New Password (Min 6 chars)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showForgotNewPassword ? "text" : "password"}
+                      required
+                      value={forgotNewPassword}
+                      onChange={(e) => {
+                        setForgotNewPassword(e.target.value);
+                        if (forgotError) setForgotError(null);
+                      }}
+                      placeholder="••••••••••••"
+                      className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2 pl-3 pr-10 text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1"
+                      title={showForgotNewPassword ? "Hide password" : "Show password"}
+                    >
+                      {showForgotNewPassword ? "👁️" : "🙈"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Confirm New Password
+                  </label>
+                  <input
+                    type={showForgotNewPassword ? "text" : "password"}
+                    required
+                    value={forgotConfirmPassword}
+                    onChange={(e) => {
+                      setForgotConfirmPassword(e.target.value);
+                      if (forgotError) setForgotError(null);
+                    }}
+                    placeholder="••••••••••••"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2 px-3 text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-600 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-600 transition-all shadow-xs"
+                  />
+                </div>
+
+                {/* Security CAPTCHA */}
+                <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-slate-800">
+                      Security Verification CAPTCHA
+                    </label>
+                    <span className="text-[10px] text-slate-400">Case-insensitive</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="relative rounded-lg border border-slate-300 overflow-hidden bg-slate-100 shrink-0">
+                      <canvas
+                        ref={forgotCanvasRef}
+                        width={130}
+                        height={38}
+                        className="block cursor-pointer select-none"
+                        onClick={refreshForgotCaptcha}
+                        title="Click to refresh CAPTCHA"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={refreshForgotCaptcha}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 active:scale-95 transition-all cursor-pointer"
+                      title="Generate new challenge"
+                    >
+                      🔄
+                    </button>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={forgotCaptchaInput}
+                      onChange={(e) => {
+                        setForgotCaptchaInput(e.target.value);
+                        setForgotCaptchaError(false);
+                        if (forgotError) setForgotError(null);
+                      }}
+                      placeholder="6-char code"
+                      className={`flex-1 h-9 rounded-lg border py-1 px-2.5 text-xs font-bold uppercase tracking-wider text-slate-900 focus:outline-none focus:ring-1 ${
+                        forgotCaptchaError
+                          ? "border-rose-500 bg-rose-50/50 focus:border-rose-600"
+                          : "border-slate-300 bg-white focus:border-indigo-600"
+                      }`}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="rounded-xl border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isForgotSubmitting}
+                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 text-xs font-bold tracking-wider uppercase shadow-md active:scale-[0.99] transition-all disabled:opacity-60 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    {isForgotSubmitting ? "Resetting Password..." : "Reset Password"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

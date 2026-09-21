@@ -10,6 +10,7 @@ from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
     RefreshRequest,
+    ResetPasswordRequest,
     SignupRequest,
     TokenResponse,
     UserOut,
@@ -18,6 +19,23 @@ from app.services import auth_service
 from app.services.auth_service import AuthError
 
 router = APIRouter()
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, object]:
+    """Allows a user to reset their password using their registered email or enrollment number."""
+    try:
+        user = await auth_service.reset_password(db, payload.email, payload.new_password)
+    except AuthError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return {
+        "success": True,
+        "message": "Password reset successfully. You can now log in with your new password.",
+        "email": user.email,
+    }
 
 
 @router.post("/change-password", status_code=status.HTTP_200_OK)

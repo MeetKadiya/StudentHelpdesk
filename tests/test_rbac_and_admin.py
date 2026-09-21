@@ -11,11 +11,8 @@ from tests.helpers import auth_headers, login
 
 
 @pytest.mark.asyncio
-async def test_student_forbidden_from_faculty_and_admin_routes(client: AsyncClient):
-    await client.post(
-        "/api/v1/auth/signup",
-        json={"email": "stu6@example.edu", "password": "testpass123"},
-    )
+async def test_student_forbidden_from_faculty_and_admin_routes(client: AsyncClient, make_user):
+    await make_user("stu6@example.edu", role="student")
     token = await login(client, "stu6@example.edu")
 
     faculty_resp = await client.get(
@@ -70,3 +67,28 @@ async def test_admin_can_promote_a_student_to_faculty(client: AsyncClient, make_
         "/api/v1/faculty/tickets", headers=auth_headers(new_faculty_token)
     )
     assert faculty_check.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_student_password_reset_flow(client: AsyncClient, make_user):
+    await make_user("stu9@example.edu", password="originalpass123", role="student")
+
+    # 1. Reset password
+    reset_resp = await client.post(
+        "/api/v1/auth/reset-password",
+        json={"email": "stu9@example.edu", "new_password": "brandnewpass456"},
+    )
+    assert reset_resp.status_code == 200
+    assert reset_resp.json()["success"] is True
+
+    # 2. Login with old password fails
+    old_login_resp = await client.post(
+        "/api/v1/auth/login",
+        json={"email": "stu9@example.edu", "password": "originalpass123"},
+    )
+    assert old_login_resp.status_code == 401
+
+    # 3. Login with new password succeeds
+    new_token = await login(client, "stu9@example.edu", password="brandnewpass456")
+    assert new_token is not None
+

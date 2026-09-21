@@ -78,3 +78,13 @@ export function changePassword(
   });
 }
 
+export function resetPassword(
+  email: string,
+  new_password: string
+): Promise<{ success: boolean; message: string; email?: string }> {
+  return apiFetch<{ success: boolean; message: string; email?: string }>("/auth/reset-password", {
+    method: "POST",
+    body: { email, new_password },
+  });
+}
+

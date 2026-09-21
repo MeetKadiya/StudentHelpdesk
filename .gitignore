@@ -23,6 +23,7 @@ rag/__pycache__/
 backend/.env
 frontend/.env.local
 docker/.env
+agents/.env
 
 # Databases / local artifacts
 *.db

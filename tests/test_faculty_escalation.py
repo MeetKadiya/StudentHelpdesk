@@ -14,10 +14,7 @@ async def test_full_escalation_to_verified_learning_enqueue(
     client: AsyncClient, mock_celery, make_user
 ):
     # Student creates a ticket.
-    await client.post(
-        "/api/v1/auth/signup",
-        json={"email": "stu3@example.edu", "password": "testpass123"},
-    )
+    await make_user("stu3@example.edu", password="testpass123", role="student")
     student_token = await login(client, "stu3@example.edu")
     ticket = (
         await client.post(
@@ -117,15 +114,12 @@ async def test_full_escalation_to_verified_learning_enqueue(
 
 @pytest.mark.asyncio
 async def test_escalation_with_no_matching_routing_rule_stays_visible(
-    client: AsyncClient,
+    client: AsyncClient, make_user
 ):
     """BACKEND-07's documented behavior: no matching rule still marks the
     ticket escalated (not silently left 'open' with no owner), and
     assigned_faculty_id stays unset rather than a crash."""
-    await client.post(
-        "/api/v1/auth/signup",
-        json={"email": "stu4@example.edu", "password": "testpass123"},
-    )
+    await make_user("stu4@example.edu", password="testpass123", role="student")
     student_token = await login(client, "stu4@example.edu")
     ticket = (
         await client.post(
@@ -158,10 +152,7 @@ async def test_faculty_cannot_see_ticket_not_routed_to_them(
 ):
     """404, not 403 -- avoids leaking that the ticket exists at all, per
     faculty_service's documented not-found-vs-not-owned pattern."""
-    await client.post(
-        "/api/v1/auth/signup",
-        json={"email": "stu5@example.edu", "password": "testpass123"},
-    )
+    await make_user("stu5@example.edu", password="testpass123", role="student")
     student_token = await login(client, "stu5@example.edu")
     ticket = (
         await client.post(

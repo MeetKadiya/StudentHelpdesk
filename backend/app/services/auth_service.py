@@ -61,6 +61,25 @@ async def change_password(
     await db.commit()
 
 
+async def reset_password(db: AsyncSession, identifier: str, new_password: str) -> User:
+    clean_id = identifier.strip()
+    if not clean_id:
+        raise AuthError("Please provide your registered email or enrollment number.")
+    if len(new_password.strip()) < 6:
+        raise AuthError("New password must be at least 6 characters long.")
+
+    user = await db.scalar(
+        select(User).where((User.email == clean_id) | (User.enrollment_number == clean_id))
+    )
+    if user is None:
+        raise AuthError("No registered account found matching this email or enrollment number.")
+
+    user.password_hash = hash_password(new_password.strip())
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+
 def issue_tokens(user: User) -> tuple[str, str]:
     user_id = str(user.id)
     return create_access_token(user_id), create_refresh_token(user_id)
