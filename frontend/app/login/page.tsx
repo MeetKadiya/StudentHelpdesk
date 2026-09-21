@@ -506,25 +506,7 @@ export default function LoginPage() {
                 </button>
               </div>
             )}
-            {selectedRole === "admin" && (
-              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50/90 p-2.5 sm:p-3 text-xs flex items-center justify-between gap-2">
-                <div>
-                  <p className="font-bold text-rose-900 text-[11px] sm:text-xs">🏛️ Demo Admin Hub Credentials</p>
-                  <p className="text-[10px] sm:text-[11px] text-rose-800 font-mono mt-0.5">admin@university.edu • Admin@Campus2026</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail("admin@university.edu");
-                    setPassword("Admin@Campus2026");
-                    setError(null);
-                  }}
-                  className="shrink-0 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] sm:text-xs transition-colors cursor-pointer"
-                >
-                  Auto Fill
-                </button>
-              </div>
-            )}
+
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-3.5 sm:space-y-4">
