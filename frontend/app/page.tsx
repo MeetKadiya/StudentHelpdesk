@@ -18,18 +18,20 @@ import { ServiceActionDialog } from "@/components/service-action-dialog";
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated, user, isUserLoading } = useAuth();
+  const { isAuthenticated, user, isUserLoading, accessToken } = useAuth();
   const [tickets, setTickets] = useState<TicketOut[] | null>(null);
   const [activeActionService, setActiveActionService] = useState<CampusService | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>("Thursday");
 
-  // Persona Redirection: Faculty & Admins should never see the student personal portal
+  // Persona Redirection: Faculty, Admins & Clerks should never see the student personal portal
   useEffect(() => {
     if (isAuthenticated && !isUserLoading && user) {
       if (user.role === "faculty") {
         router.replace("/faculty");
       } else if (user.role === "admin") {
         router.replace("/admin");
+      } else if (user.role === "clerk") {
+        router.replace("/clerk");
       }
     }
   }, [isAuthenticated, isUserLoading, user, router]);
@@ -40,22 +42,16 @@ export default function HomePage() {
   const weeklyTimetable = getDynamicWeeklyTimetable(user?.email);
 
   useEffect(() => {
-    if (user && isAuthenticated && user.role === "student" && typeof window !== "undefined") {
-      const stored = JSON.parse(window.localStorage.getItem("helpdesk_auth") || "{}");
-      if (stored.accessToken) {
-        listTickets(stored.accessToken)
-          .then((data) => setTickets(data))
-          .catch(() => setTickets([]));
-      }
+    if (user && isAuthenticated && user.role === "student" && accessToken) {
+      listTickets(accessToken)
+        .then((data) => setTickets(data))
+        .catch(() => setTickets([]));
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, accessToken]);
 
   function refreshTicketList() {
-    if (user && typeof window !== "undefined") {
-      const stored = JSON.parse(window.localStorage.getItem("helpdesk_auth") || "{}");
-      if (stored.accessToken) {
-        listTickets(stored.accessToken).then(setTickets).catch(() => {});
-      }
+    if (user && accessToken) {
+      listTickets(accessToken).then(setTickets).catch(() => {});
     }
   }
 
@@ -65,17 +61,28 @@ export default function HomePage() {
     setActiveActionService(found);
   }
 
+  if (isUserLoading) {
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-600" />
+        <p className="text-xs font-semibold text-slate-500">
+          Loading portal dashboard...
+        </p>
+      </div>
+    );
+  }
+
   // =========================================================================
   // 1. AUTHENTICATED: Full Student Management Dashboard (Inspired by SMS Reference)
   // =========================================================================
   if (isAuthenticated && user) {
-    // If role is faculty or admin, render loading transition while redirecting
-    if (user.role === "faculty" || user.role === "admin") {
+    // If role is faculty, admin, or clerk, render loading transition while redirecting
+    if (user.role === "faculty" || user.role === "admin" || user.role === "clerk") {
       return (
         <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-3">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-indigo-600" />
           <p className="text-xs font-semibold text-slate-500">
-            Routing to your {user.role === "faculty" ? "Faculty Workspace" : "Admin Hub"}...
+            Routing to your {user.role === "faculty" ? "Faculty Workspace" : user.role === "admin" ? "Admin Hub" : "Clerk Desk"}...
           </p>
         </div>
       );

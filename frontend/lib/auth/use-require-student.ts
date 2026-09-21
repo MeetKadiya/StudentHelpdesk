@@ -14,15 +14,18 @@ export function useRequireStudent() {
   const { isAuthenticated, user, isUserLoading } = useAuth();
 
   useEffect(() => {
+    if (isUserLoading) return;
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
-    if (!isUserLoading && user) {
+    if (user) {
       if (user.role === "faculty") {
         router.push("/faculty");
       } else if (user.role === "admin") {
         router.push("/admin");
+      } else if (user.role === "clerk") {
+        router.push("/clerk");
       }
     }
   }, [isAuthenticated, isUserLoading, user, router]);

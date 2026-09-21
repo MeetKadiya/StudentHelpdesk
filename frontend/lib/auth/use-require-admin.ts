@@ -16,13 +16,16 @@ export function useRequireAdmin() {
   const { accessToken, isAuthenticated, user, isUserLoading } = useAuth();
 
   useEffect(() => {
+    if (isUserLoading) return;
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
-    if (!isUserLoading && user && user.role !== "admin") {
+    if (user && user.role !== "admin") {
       if (user.role === "faculty") {
         router.push("/faculty");
+      } else if (user.role === "clerk") {
+        router.push("/clerk");
       } else {
         router.push("/");
       }

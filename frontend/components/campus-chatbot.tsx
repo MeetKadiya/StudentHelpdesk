@@ -25,8 +25,11 @@ export function CampusChatbot() {
   const [isTyping, setIsTyping] = useState(false);
   const [activeServiceModal, setActiveServiceModal] = useState<CampusService | null>(null);
 
-  const profile = getDynamicStudentProfile(user?.email);
-  const studentName = profile.name.split(" ")[0];
+  const studentName = user?.name
+    ? user.name.split(" ")[0]
+    : user?.email
+    ? getDynamicStudentProfile(user.email).name.split(" ")[0]
+    : "";
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -34,7 +37,9 @@ export function CampusChatbot() {
     {
       id: "welcome-msg",
       sender: "assistant",
-      content: `Hello **${studentName || "there"}**! 👋 I am your **Campus AI Assistant**.\n\nI can help you with lecture schedules, fee payments, attendance rules, exam hall tickets, bonafide certificates, and faculty advising.\n\nHow can I help you today?`,
+      content: studentName
+        ? `Hello **${studentName}**! 👋 I am your **Campus AI Assistant**.\n\nI can help you with lecture schedules, fee payments, attendance rules, exam hall tickets, bonafide certificates, and faculty advising.\n\nHow can I help you today?`
+        : `Hello! 👋 I am your **Campus AI Assistant**.\n\nI can help you explore campus services, attendance rules, fee structures, academic queries, and department assistance.\n\nHow can I help you today?`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       suggested_queries: [
         "Check my fee dues",

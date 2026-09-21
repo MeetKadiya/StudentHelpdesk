@@ -17,7 +17,7 @@
  * rather than trusting a stale cached value).
  */
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { login as apiLogin, signup as apiSignup, getMe, type TokenResponse, type UserOut } from "@/lib/api/auth";
+import { login as apiLogin, signup as apiSignup, getMe, refresh, type TokenResponse, type UserOut } from "@/lib/api/auth";
 
 const STORAGE_KEY = "helpdesk_auth";
 
@@ -58,65 +58,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
   const [user, setUser] = useState<UserOut | null>(null);
-  const [isUserLoading, setIsUserLoading] = useState(false);
+  const [isUserLoading, setIsUserLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const stored = readStoredAuth();
-    if (stored) {
+    if (stored && stored.accessToken) {
       setAccessToken(stored.accessToken);
       setRefreshToken(stored.refreshToken);
+      getMe(stored.accessToken)
+        .then((me) => {
+          if (!cancelled) {
+            setUser(me);
+            setIsUserLoading(false);
+          }
+        })
+        .catch(async () => {
+          // Token invalid or expired: attempt refresh if refresh token exists
+          if (stored.refreshToken) {
+            try {
+              const newTokens = await refresh(stored.refreshToken);
+              if (!cancelled) {
+                persist(newTokens);
+                const me = await getMe(newTokens.access_token);
+                setUser(me);
+                setIsUserLoading(false);
+                return;
+              }
+            } catch {
+              // Refresh token is also invalid or expired
+            }
+          }
+          // Purge corrupted/expired tokens from storage so user is not stuck in half-authed state
+          if (!cancelled) {
+            persist(null);
+            setUser(null);
+            setIsUserLoading(false);
+          }
+        });
+    } else {
+      setIsUserLoading(false);
     }
-  }, []);
-
-  // Fetch /auth/me whenever accessToken changes (login, signup, or
-  // hydration from storage) — separate from persist() so a hydrated token
-  // gets its role resolved too, not just a fresh login.
-  useEffect(() => {
-    if (!accessToken) {
-      setUser(null);
-      return;
-    }
-    let cancelled = false;
-    setIsUserLoading(true);
-    getMe(accessToken)
-      .then((me) => {
-        if (!cancelled) setUser(me);
-      })
-      .catch(() => {
-        // Token invalid/expired — leave user null; useRequireAuth-style
-        // guards already redirect on isAuthenticated, this just means
-        // role-aware UI won't render until a fresh login.
-        if (!cancelled) setUser(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsUserLoading(false);
-      });
     return () => {
       cancelled = true;
     };
-  }, [accessToken]);
+  }, []);
 
   function persist(tokens: TokenResponse | null) {
     if (tokens) {
       setAccessToken(tokens.access_token);
       setRefreshToken(tokens.refresh_token);
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token })
-      );
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ accessToken: tokens.access_token, refreshToken: tokens.refresh_token })
+        );
+      }
     } else {
       setAccessToken(null);
       setRefreshToken(null);
-      window.localStorage.removeItem(STORAGE_KEY);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(STORAGE_KEY);
+      }
     }
   }
 
   async function login(email: string, password: string): Promise<UserOut> {
-    const tokens = await apiLogin(email, password);
-    persist(tokens);
-    const me = await getMe(tokens.access_token);
-    setUser(me);
-    return me;
+    setIsUserLoading(true);
+    try {
+      const tokens = await apiLogin(email, password);
+      persist(tokens);
+      const me = await getMe(tokens.access_token);
+      setUser(me);
+      return me;
+    } finally {
+      setIsUserLoading(false);
+    }
   }
 
   async function signup(
@@ -129,6 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
+    setUser(null);
     persist(null);
   }
 
@@ -137,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         accessToken,
         refreshToken,
-        isAuthenticated: accessToken !== null,
+        isAuthenticated: Boolean(accessToken && user),
         user,
         isUserLoading,
         login,

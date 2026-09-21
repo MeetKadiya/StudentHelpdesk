@@ -16,7 +16,7 @@ import { ApiError } from "@/lib/api/client";
 export function PortalShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user, logout, accessToken } = useAuth();
+  const { isAuthenticated, user, logout, accessToken, isUserLoading } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,12 +82,12 @@ export function PortalShell({ children }: { children: ReactNode }) {
   const profile = getDynamicStudentProfile(user?.email);
 
   const displayName = isFaculty
-    ? (emailPrefix ? `Prof. ${emailPrefix}` : "Professor / Faculty")
+    ? (user?.name || (emailPrefix ? `Prof. ${emailPrefix}` : "Professor / Faculty"))
     : isAdmin
-    ? (emailPrefix ? `Admin ${emailPrefix}` : "System Administrator")
+    ? (user?.name || (emailPrefix ? `Admin ${emailPrefix}` : "System Administrator"))
     : isClerk
-    ? (emailPrefix ? `Clerk ${emailPrefix}` : "HelpDesk Clerk")
-    : profile.name;
+    ? (user?.name || (emailPrefix ? `Clerk ${emailPrefix}` : "HelpDesk Clerk"))
+    : (user?.name || (emailPrefix ? emailPrefix : profile.name));
 
   const roleSubtitle = isFaculty
     ? "Faculty Staff • Dept of Computing & IT"
@@ -95,7 +95,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
     ? "Central System SuperAdmin • IT Ops"
     : isClerk
     ? "HelpDesk Clerk • Student Queries & Forwarding"
-    : `${profile.enrollmentNo} • Sem 6`;
+    : `${user?.enrollment_number || profile.enrollmentNo} • ${user?.semester || "Sem 6"}`;
 
   function handleLogout() {
     logout();
@@ -103,8 +103,20 @@ export function PortalShell({ children }: { children: ReactNode }) {
     router.push("/login");
   }
 
+  // Loading state: prevent mismatch or flash between authenticated and unauthenticated views
+  if (isUserLoading) {
+    return (
+      <div className="min-h-screen bg-[#f4f6f9] flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-3 border-slate-300 border-t-indigo-600" />
+          <p className="text-xs font-semibold text-slate-500">Loading campus portal...</p>
+        </div>
+      </div>
+    );
+  }
+
   // If user is authenticated, render role-specific shell
-  if (isAuthenticated) {
+  if (isAuthenticated && user) {
     return (
       <div className="min-h-screen bg-[#f4f6f9] text-slate-800 flex flex-col antialiased">
         <div className="flex flex-1 overflow-hidden">
@@ -339,7 +351,11 @@ export function PortalShell({ children }: { children: ReactNode }) {
                       }`}
                     >
                       <span className="text-[11px] font-semibold tracking-wider">
-                        {user?.email?.slice(0, 2).toUpperCase() || "US"}
+                        {user?.name
+                          ? user.name.slice(0, 2).toUpperCase()
+                          : user?.email
+                          ? user.email.slice(0, 2).toUpperCase()
+                          : "US"}
                       </span>
                     </div>
 

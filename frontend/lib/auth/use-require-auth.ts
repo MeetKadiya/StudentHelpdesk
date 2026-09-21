@@ -13,13 +13,13 @@ import { useAuth } from "@/lib/auth/auth-context";
  */
 export function useRequireAuth() {
   const router = useRouter();
-  const { accessToken, isAuthenticated } = useAuth();
+  const { accessToken, isAuthenticated, isUserLoading } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isUserLoading && !isAuthenticated) {
       router.push("/login");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isUserLoading, router]);
 
   return accessToken;
 }

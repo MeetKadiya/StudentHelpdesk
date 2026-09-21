@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,11 +9,12 @@ export function useRequireClerk() {
   const { accessToken, isAuthenticated, user, isUserLoading } = useAuth();
 
   useEffect(() => {
+    if (isUserLoading) return;
     if (!isAuthenticated) {
       router.push("/login");
       return;
     }
-    if (!isUserLoading && user && user.role !== "clerk" && user.role !== "admin") {
+    if (user && user.role !== "clerk" && user.role !== "admin") {
       if (user.role === "faculty") {
         router.push("/faculty");
       } else {

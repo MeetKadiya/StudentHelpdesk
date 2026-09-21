@@ -102,7 +102,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: "enrollment",
     label: "Enrollment Process",
-    sectionId: "profile-section",
+    href: "/services",
     iconType: "enrollment",
   },
   {
